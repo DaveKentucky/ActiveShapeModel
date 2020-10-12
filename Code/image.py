@@ -18,6 +18,7 @@ class Image:
         self.size = size    # desired max size of image
         self.points = []    # array for landmark points
 
+        # set original size
         self.height = self.image.shape[0]
         self.width = self.image.shape[1]
         # scale the image ot desired size
@@ -43,9 +44,34 @@ class Image:
         self.width = self.image.shape[1]
 
     def add_landmark_point(self, x, y):
+        # add new point to the list of landmark points
+        # and draw it on the displayed image
 
         self.points.append((x, y))
-        cv.circle(self.image, (x, y), 3, (0, 0, 255), -1)
 
+        print("landmark points marked:")
         for point in self.points:
             print(point)
+
+    def remove_landmark_point(self):
+        # remove the last landmark point from the list
+
+        if len(self.points) > 0:
+            del self.points[-1]
+            print("landmark point deleted")
+            if len(self.points) > 0:
+                print("landmark points marked:")
+                for point in self.points:
+                    print(point)
+        else:
+            print("no landmark points marked \n")
+
+    def get_image_with_landmarks(self):
+        # get image with notified landmark points on it
+
+        display_image = self.image.copy()
+
+        for point in self.points:
+            cv.circle(display_image, (point[0], point[1]), 3, (0, 0, 255), -1)
+
+        return display_image
