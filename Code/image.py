@@ -14,17 +14,17 @@ class Image:
         if image is None:
             sys.exit("Failed to load the image")
 
-        self.image = image  # jpeg image
+        self._image = image  # jpeg image
         self.size = size    # desired max size of image
         self.points = []    # array for landmark points
 
         # set original size
-        self.height = self.image.shape[0]
-        self.width = self.image.shape[1]
+        self.height = self._image.shape[0]
+        self.width = self._image.shape[1]
         # scale the image ot desired size
-        self.scale_image(self.width, self.height)
+        self.scale(self.width, self.height)
 
-    def scale_image(self, w, h):
+    def scale(self, w, h):
         # w - original image width in pixels
         # h - original image height in pixels
 
@@ -39,9 +39,9 @@ class Image:
             new_w = int(w/scale)
             new_h = self.size
 
-        self.image = cv.resize(self.image, (new_w, new_h))
-        self.height = self.image.shape[0]
-        self.width = self.image.shape[1]
+        self._image = cv.resize(self._image, (new_w, new_h))
+        self.height = self._image.shape[0]
+        self.width = self._image.shape[1]
 
     def add_landmark_point(self, x, y):
         # add new point to the list of landmark points
@@ -66,10 +66,10 @@ class Image:
         else:
             print("no landmark points marked \n")
 
-    def get_image_with_landmarks(self):
+    def get_display_image(self):
         # get image with notified landmark points on it
 
-        display_image = self.image.copy()
+        display_image = self._image.copy()
 
         for point in self.points:
             cv.circle(display_image, (point[0], point[1]), 3, (0, 0, 255), -1)
