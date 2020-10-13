@@ -5,7 +5,7 @@ import sys
 
 class Image:
 
-    def __init__(self, file, size):
+    def __init__(self, file, size=512):
         # file - relative track to image file
         # size - desired size of image (longer edge)
 
@@ -21,6 +21,8 @@ class Image:
         # set original size
         self.height = self._image.shape[0]
         self.width = self._image.shape[1]
+        # print("w: " + str(self.width) + ", h: " + str(self.height))
+
         # scale the image ot desired size
         self.scale(self.width, self.height)
 
@@ -28,20 +30,22 @@ class Image:
         # w - original image width in pixels
         # h - original image height in pixels
 
-        if w == h:
-            new_w = new_h = self.size
-        elif w > h:
-            scale = w/self.size
-            new_w = self.size
-            new_h = int(h/scale)
-        else:
-            scale = h/self.size
-            new_w = int(w/scale)
-            new_h = self.size
+        if max(self._image.shape[:2]) > self.size:
+            print("scaling image...")
+            if w == h:
+                new_w = new_h = self.size
+            elif w > h:
+                scale = float(self.size / w)
+                new_w = self.size
+                new_h = int(h * scale)
+            else:
+                scale = float(self.size / h)
+                new_w = int(w * scale)
+                new_h = self.size
 
-        self._image = cv.resize(self._image, (new_w, new_h))
-        self.height = self._image.shape[0]
-        self.width = self._image.shape[1]
+            self._image = cv.resize(self._image, (new_w, new_h))
+            self.height = self._image.shape[0]
+            self.width = self._image.shape[1]
 
     def add_landmark_point(self, x, y):
         # add new point to the list of landmark points
@@ -72,6 +76,9 @@ class Image:
         display_image = self._image.copy()
 
         for point in self.points:
-            cv.circle(display_image, (point[0], point[1]), 3, (0, 0, 255), -1)
+            x = point[0]
+            y = point[1]
+            cv.circle(display_image, (x, y), 3, (200, 0, 0), -1)
+            cv.putText(display_image, str(self.points.index(point) + 1), (x + 3, y - 3), cv.FONT_HERSHEY_PLAIN, 1.2, (200, 0, 0), 2)
 
         return display_image

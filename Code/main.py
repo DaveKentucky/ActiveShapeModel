@@ -15,8 +15,8 @@ def mouse_click(event, x, y, flags, param):
         cv.imshow("Image", img.get_display_image())
 
 # create image object
-filename = "img6"
-img = Image("Images/Face/" + filename + ".jpg", 400)
+filename = "img4"
+img = Image("Images/Face/" + filename + ".jpg")
 
 print("height: " + str(img.height))
 print("width: " + str(img.width))
