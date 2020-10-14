@@ -96,6 +96,7 @@ class Image:
 
     def detect_SIFT(self):
         # detect and mark SIFT algorithm keypoints
+        # save the image with marked keypoints to file
 
         grey = cv.cvtColor(self.__image, cv.COLOR_BGR2GRAY)
         sift = cv.SIFT_create()
@@ -107,6 +108,7 @@ class Image:
 
     def detect_FAST(self):
         # detect and mark FAST algorithm keypoints
+        # save the image with marked keypoints to file
 
         grey = cv.cvtColor(self.__image, cv.COLOR_BGR2GRAY)
         fast = cv.FastFeatureDetector_create(threshold=25)
@@ -118,6 +120,7 @@ class Image:
 
     def detect_ORB(self):
         # detect and mark ORB algorithm keypoints
+        # save the image with marked keypoints to file
 
         grey = cv.cvtColor(self.__image, cv.COLOR_BGR2GRAY)
         orb = cv.ORB_create()
@@ -126,3 +129,22 @@ class Image:
         img = cv.drawKeypoints(grey, kp, None, (200, 0, 0))
         cv.imwrite("keypoints_orb.jpg", img)
         print("Saved result of ORB algorithm to file")
+
+    def convert_landmarks(self):
+        # convert marked landmark points to keypoint objects
+
+        grey = cv.cvtColor(self.__image, cv.COLOR_BGR2GRAY)
+        kp = cv.KeyPoint_convert(self.points)
+        img = cv.drawKeypoints(grey, kp, None, (200, 0, 0))
+        cv.imwrite("keypoints_landmarks.jpg", img)
+
+        self.describe_keypoints(kp)
+
+    def describe_keypoints(self, kp):
+        # create descriptors to given keypoints
+
+        orb = cv.ORB_create()
+        kp, ds = orb.compute(self.__image, kp)
+
+        for d in ds:
+            print(d)

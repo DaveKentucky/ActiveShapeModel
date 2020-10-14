@@ -15,7 +15,7 @@ def mouse_click(event, x, y, flags, param):
         cv.imshow("Image", img.get_display_image())
 
 # create image object
-filename = "img6"
+filename = "img1"
 img = Image("Images/Face/" + filename + ".jpg")
 
 print("height: " + str(img.height))
@@ -33,3 +33,9 @@ while cv.getWindowProperty("Image", cv.WND_PROP_VISIBLE) >= 1:
     elif key == ord('r'):
         img.remove_landmark_point()
         cv.imshow("Image", img.get_display_image())
+    elif key == ord('f'):
+        img.detect_ORB()
+        img.detect_SIFT()
+        img.detect_FAST()
+    elif key == ord('k'):
+        img.convert_landmarks()
