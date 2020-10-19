@@ -1,51 +1,64 @@
 import numpy as np
 import cv2 as cv
 import sys
+import math
 
 
 class Image:
 
-    def __init__(self, path, size=512):
-        # path - relative track to image file
+    def __init__(self, filename, size=512):
+        # filename - image file from 'Code' directory
         # size - desired size of image (longer edge)
 
         # read image from file
+        path = "./Data/" + filename + ".jpg"
         image = cv.imread(path)
         if image is None:
             sys.exit("Failed to load the image")
 
-        self.__image = image  # jpeg image
+        self.__image = image  # original image
         self.size = size    # desired max size of image
         self.points = []    # array for landmark points
 
         # set original size
         self.height = self.__image.shape[0]
         self.width = self.__image.shape[1]
-        # print("w: " + str(self.width) + ", h: " + str(self.height))
 
         # scale the image ot desired size
-        self.scale(self.width, self.height)
+        self.image = self.prepare_image(self.width, self.height)    # scaled and greyscale image
+        print("w: " + str(self.width) + ", h: " + str(self.height))
 
-    def scale(self, w, h):
+    def prepare_image(self, w, h):
         # w - original image width in pixels
         # h - original image height in pixels
 
-        if max(self.__image.shape[:2]) > self.size:
-            print("scaling image...")
-            if w == h:
-                new_w = new_h = self.size
-            elif w > h:
-                scale = float(self.size / w)
-                new_w = self.size
-                new_h = int(h * scale)
-            else:
-                scale = float(self.size / h)
-                new_w = int(w * scale)
-                new_h = self.size
+        # size = self.size
+        # if max(self.__image.shape[:2]) > size:
+        #     if w == h:
+        #         new_w = new_h = size
+        #     elif w > h:
+        #         scale = float(size / w)
+        #         new_w = size
+        #         new_h = int(h * scale)
+        #     else:
+        #         scale = float(size / h)
+        #         new_w = int(w * scale)
+        #         new_h = size
 
-            self.__image = cv.resize(self.__image, (new_w, new_h))
-            self.height = self.__image.shape[0]
-            self.width = self.__image.shape[1]
+        image = self.__image
+        if image.shape == 3:
+            grey_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        else:
+            grey_image = image
+
+        ratio = math.sqrt(40000 / (w * h))
+        new_w = int(w * ratio)
+        new_h = int(h * ratio)
+        image = cv.resize(grey_image, (new_w, new_h))
+
+        self.height = image.shape[0]
+        self.width = image.shape[1]
+        return image
 
     def add_landmark_point(self, x, y):
         # add new point to the list of landmark points
@@ -73,14 +86,13 @@ class Image:
     def get_display_image(self):
         # get image with notified landmark points on it
 
-        display_image = self.__image.copy()
+        display_image = self.image.copy()
 
         for point in self.points:
             x = point[0]
             y = point[1]
             index = self.points.index(point) + 1
-            cv.circle(display_image, (x, y), 3, (200, 0, 0), -1)
-            cv.putText(display_image, str(index), (x + 3, y - 3), cv.FONT_HERSHEY_PLAIN, 1.2, (200, 0, 0), 2)
+            cv.circle(display_image, (x, y), 1, (200, 0, 0), -1)
 
         return display_image
 
@@ -93,42 +105,6 @@ class Image:
             cv.circle(mask, point, 10, (255, 255, 255), -1)
 
         return mask
-
-    def detect_SIFT(self):
-        # detect and mark SIFT algorithm keypoints
-        # save the image with marked keypoints to file
-
-        grey = cv.cvtColor(self.__image, cv.COLOR_BGR2GRAY)
-        sift = cv.SIFT_create()
-        kp = sift.detect(grey, self.get_landmarks_mask())
-
-        img = cv.drawKeypoints(grey, kp, None)
-        cv.imwrite("keypoints_sift.jpg", img)
-        print("Saved result of SIFT algorithm to file")
-
-    def detect_FAST(self):
-        # detect and mark FAST algorithm keypoints
-        # save the image with marked keypoints to file
-
-        grey = cv.cvtColor(self.__image, cv.COLOR_BGR2GRAY)
-        fast = cv.FastFeatureDetector_create(threshold=25)
-        kp = fast.detect(grey, self.get_landmarks_mask())
-
-        img = cv.drawKeypoints(grey, kp, None, (200, 0, 0))
-        cv.imwrite("keypoints_fast.jpg", img)
-        print("Saved result of FAST algorithm to file")
-
-    def detect_ORB(self):
-        # detect and mark ORB algorithm keypoints
-        # save the image with marked keypoints to file
-
-        grey = cv.cvtColor(self.__image, cv.COLOR_BGR2GRAY)
-        orb = cv.ORB_create()
-        kp = orb.detect(grey, self.get_landmarks_mask())
-
-        img = cv.drawKeypoints(grey, kp, None, (200, 0, 0))
-        cv.imwrite("keypoints_orb.jpg", img)
-        print("Saved result of ORB algorithm to file")
 
     def convert_landmarks(self):
         # convert marked landmark points to keypoint objects

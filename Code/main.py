@@ -15,14 +15,11 @@ def mouse_click(event, x, y, flags, param):
         cv.imshow("Image", img.get_display_image())
 
 # create image object
-filename = "img1"
-img = Image("Images/Face/" + filename + ".jpg")
-
-print("height: " + str(img.height))
-print("width: " + str(img.width))
+filename = "Face_images/face1"
+img = Image(filename)
 
 cv.namedWindow("Image", cv.WINDOW_KEEPRATIO)
-cv.setMouseCallback("Image", mouse_click, img)
+cv.setMouseCallback("Image", mouse_click, filename)
 cv.imshow("Image", img.get_display_image())
 
 wait_time = 1000
@@ -33,9 +30,5 @@ while cv.getWindowProperty("Image", cv.WND_PROP_VISIBLE) >= 1:
     elif key == ord('r'):
         img.remove_landmark_point()
         cv.imshow("Image", img.get_display_image())
-    elif key == ord('f'):
-        img.detect_ORB()
-        img.detect_SIFT()
-        img.detect_FAST()
     elif key == ord('k'):
         img.convert_landmarks()
