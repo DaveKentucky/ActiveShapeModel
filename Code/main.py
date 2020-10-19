@@ -1,5 +1,6 @@
 import cv2 as cv
 from image import Image
+from pdm import PDM
 
 
 def mouse_click(event, x, y, flags, param):
@@ -15,7 +16,7 @@ def mouse_click(event, x, y, flags, param):
         cv.imshow("Image", img.get_display_image())
 
 # create image object
-filename = "Face_images/face1"
+filename = "Face_images/face1.jpg"
 img = Image(filename)
 
 cv.namedWindow("Image", cv.WINDOW_KEEPRATIO)
@@ -32,3 +33,6 @@ while cv.getWindowProperty("Image", cv.WND_PROP_VISIBLE) >= 1:
         cv.imshow("Image", img.get_display_image())
     elif key == ord('k'):
         img.convert_landmarks()
+    elif key == ord('p'):
+        pdm = PDM(img.points)
+        print(pdm.reference_shape)

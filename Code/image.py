@@ -5,45 +5,31 @@ import math
 
 
 class Image:
+    # an image object with its parameters and landmark points
 
-    def __init__(self, filename, size=512):
+    def __init__(self, filename):
         # filename - image file from 'Code' directory
-        # size - desired size of image (longer edge)
 
         # read image from file
-        path = "./Data/" + filename + ".jpg"
+        path = "./Data/" + filename
         image = cv.imread(path)
         if image is None:
             sys.exit("Failed to load the image")
 
         self.__image = image  # original image
-        self.size = size    # desired max size of image
-        self.points = []    # array for landmark points
+        self.points = []  # array for landmark points
 
         # set original size
         self.height = self.__image.shape[0]
         self.width = self.__image.shape[1]
 
         # scale the image ot desired size
-        self.image = self.prepare_image(self.width, self.height)    # scaled and greyscale image
+        self.image = self.prepare_image(self.width, self.height)  # scaled and greyscale image
         print("w: " + str(self.width) + ", h: " + str(self.height))
 
     def prepare_image(self, w, h):
         # w - original image width in pixels
         # h - original image height in pixels
-
-        # size = self.size
-        # if max(self.__image.shape[:2]) > size:
-        #     if w == h:
-        #         new_w = new_h = size
-        #     elif w > h:
-        #         scale = float(size / w)
-        #         new_w = size
-        #         new_h = int(h * scale)
-        #     else:
-        #         scale = float(size / h)
-        #         new_w = int(w * scale)
-        #         new_h = size
 
         image = self.__image
         if image.shape == 3:
@@ -51,7 +37,7 @@ class Image:
         else:
             grey_image = image
 
-        ratio = math.sqrt(40000 / (w * h))
+        ratio = math.sqrt(160000 / (w * h))
         new_w = int(w * ratio)
         new_h = int(h * ratio)
         image = cv.resize(grey_image, (new_w, new_h))
@@ -93,6 +79,7 @@ class Image:
             y = point[1]
             index = self.points.index(point) + 1
             cv.circle(display_image, (x, y), 1, (200, 0, 0), -1)
+            cv.putText(display_image, str(index), (x + 1, y - 1), cv.FONT_HERSHEY_PLAIN, 1.0, (200, 0, 0))
 
         return display_image
 
