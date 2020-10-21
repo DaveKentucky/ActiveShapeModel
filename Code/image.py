@@ -56,6 +56,20 @@ class Image:
         for point in self.points:
             print(point)
 
+    def get_landmark_point(self, coords):
+        x = coords[0]
+        y = coords[1]
+        for point in self.points:
+            if x - 1 <= point[0] <= x + 1 and y - 1 <= point[1] <= y + 1:
+                _list = list(point)
+                _list.append(self.points.index(point))
+                _tuple = tuple(_list)
+                return _tuple
+
+    def set_landmark_point(self, i, coords):
+        if self.points[i] is not None:
+            self.points[i] = coords
+
     def remove_landmark_point(self):
         # remove the last landmark point from the list
 
@@ -78,7 +92,7 @@ class Image:
             x = point[0]
             y = point[1]
             index = self.points.index(point) + 1
-            cv.circle(display_image, (x, y), 1, (200, 0, 0), -1)
+            cv.rectangle(display_image, (x - 1, y - 1), (x + 1, y + 1), (200, 0, 0), -1)
             cv.putText(display_image, str(index), (x + 1, y - 1), cv.FONT_HERSHEY_PLAIN, 1.0, (200, 0, 0))
 
         return display_image
@@ -111,3 +125,34 @@ class Image:
 
         for d in ds:
             print(d)
+
+
+g_coords = tuple
+g_index = -1
+
+
+def mouse_input(event, x, y, flags, img):
+    # resolve mouse input on image
+
+    global g_coords, g_index
+
+    if event == cv.EVENT_LBUTTONDOWN:
+        g_coords = (x, y)
+        point = img.get_landmark_point(g_coords)
+        if point is not None:
+            g_index = point[2]
+            img.set_landmark_point(g_index, g_coords)
+
+    if event == cv.EVENT_LBUTTONUP:
+        if g_index == -1:
+            img.add_landmark_point(x, y)
+        else:
+            img.set_landmark_point(g_index, (x, y))
+            g_index = -1
+
+    if event == cv.EVENT_MOUSEMOVE:
+        if g_index != -1:
+            img.set_landmark_point(g_index, (x, y))
+            cv.imshow("Image", img.get_display_image())
+
+    cv.imshow("Image", img.get_display_image())
