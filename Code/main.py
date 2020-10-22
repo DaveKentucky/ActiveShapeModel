@@ -7,6 +7,7 @@ from pdm import PDM
 # create image object
 filename = "Face_images/face1.jpg"
 img = Image(filename)
+pdm = None
 
 cv.namedWindow("Image", cv.WINDOW_KEEPRATIO)
 cv.setMouseCallback("Image", image.mouse_input, img)
@@ -29,4 +30,8 @@ while cv.getWindowProperty("Image", cv.WND_PROP_VISIBLE) >= 1:
         cv.setMouseCallback("Image", image.mouse_input, img)
         cv.imshow("Image", img.get_display_image())
     elif key == ord('s'):
-        pdm.add_shape(img.points)
+        if pdm is None:
+            pdm = PDM(img.points)
+        else:
+            pdm.add_shape(img.points)
+        pdm.save_mean_shape("mean_shape.jpg")

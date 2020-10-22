@@ -18,6 +18,7 @@ class Image:
 
         self.__image = image  # original image
         self.points = []  # array for landmark points
+        self.image = np.ndarray
 
         # set original size
         self.height = self.__image.shape[0]
@@ -41,7 +42,7 @@ class Image:
         # h - original image height in pixels
 
         image = self.__image
-        if image.shape == 3:
+        if len(image.shape) == 3:
             grey_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         else:
             grey_image = image
@@ -143,7 +144,7 @@ class Image:
         """
         # get image with notified landmark points on it
 
-        display_image = self.image.copy()
+        display_image = self.__image.copy()
         for point in self.points:
             index = self.points.index(point) + 1
             x = point[0]
