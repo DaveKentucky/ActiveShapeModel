@@ -68,7 +68,7 @@ class Image:
         # add new point to the list of landmark points
         # and draw it on the displayed image
 
-        self.points.append((x, y))
+        self.points.append([x, y])
 
         print("landmark points marked:")
         for point in self.points:
@@ -79,11 +79,11 @@ class Image:
         Returns the landmark point at given index or close to given point of the image
 
         :param coords: point coordinates on the image
-        :type coords: tuple[int, int]
+        :type coords: list[int]
         :param i: index of the landmark point in array
         :type i: int
         :return: landmark point coordinates
-        :rtype: tuple[int, int]
+        :rtype: list[int]
         """
         if i >= 0:
             return self.points[i]
@@ -92,17 +92,16 @@ class Image:
         y = coords[1]
         for point in self.points:
             if x - 1 <= point[0] <= x + 1 and y - 1 <= point[1] <= y + 1:
-                _list = list(point)
+                _list = point
                 _list.append(self.points.index(point))
-                _tuple = tuple(_list)
-                return _tuple
+                return _list
 
     def set_landmark_point(self, coords, i):
         """
         Sets landmark point in array to given coordinates
 
         :param coords: new coordinates of the point
-        :type coords: tuple[int, int]
+        :type coords: list[int]
         :param i: index of the landmark point in array
         :type i: int
         :return: None
@@ -208,7 +207,7 @@ def mouse_input(event, x, y, flags, img):
     global g_coords, g_index
 
     if event == cv.EVENT_LBUTTONDOWN:
-        g_coords = (x, y)
+        g_coords = [x, y]
         point = img.get_landmark_point(g_coords)
         if point is not None:
             g_index = point[2]
@@ -218,12 +217,12 @@ def mouse_input(event, x, y, flags, img):
         if g_index == -1:
             img.add_landmark_point(x, y)
         else:
-            img.set_landmark_point((x, y), g_index)
+            img.set_landmark_point([x, y], g_index)
             g_index = -1
 
     if event == cv.EVENT_MOUSEMOVE:
         if g_index != -1:
-            img.set_landmark_point((x, y), g_index)
+            img.set_landmark_point([x, y], g_index)
             cv.imshow("Image", img.get_display_image())
 
     cv.imshow("Image", img.get_display_image())

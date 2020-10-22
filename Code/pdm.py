@@ -35,6 +35,9 @@ class PDM:
                 self.mean_shape = new_mean
                 self.distance = new_distance
 
+        print(self.mean_shape)
+        print(shape)
+
     def get_mean_shape(self):
         """
         Returns the mean shape of the PDM scaled into array of points
@@ -42,3 +45,6 @@ class PDM:
         :rtype: numpy.ndarray[float, float]
         """
         return self.mean_shape.reshape(-1, 2)
+
+    def save_mean_shape(self, filename):
+        pass
