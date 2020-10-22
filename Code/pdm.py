@@ -33,3 +33,6 @@ class PDM:
 
                 self.mean_shape = new_mean
                 self.distance = new_distance
+
+    def get_mean_shape(self):
+        return self.mean_shape.reshape(-1, 2)

@@ -22,3 +22,9 @@ while cv.getWindowProperty("Image", cv.WND_PROP_VISIBLE) >= 1:
         cv.imshow("Image", img.get_display_image())
     elif key == ord('k'):
         img.convert_landmarks()
+    elif key == ord('s'):
+        pdm = PDM(img.points)
+        img = Image("Face_images/face3.jpg")
+        img.set_landmarks_array(pdm)
+        cv.setMouseCallback("Image", image.mouse_input, img)
+        cv.imshow("Image", img.get_display_image())

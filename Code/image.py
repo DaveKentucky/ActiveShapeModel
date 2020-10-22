@@ -56,7 +56,10 @@ class Image:
         for point in self.points:
             print(point)
 
-    def get_landmark_point(self, coords):
+    def get_landmark_point(self, coords, i=-1):
+        if i >= 0:
+            return self.points[i]
+
         x = coords[0]
         y = coords[1]
         for point in self.points:
@@ -66,7 +69,7 @@ class Image:
                 _tuple = tuple(_list)
                 return _tuple
 
-    def set_landmark_point(self, i, coords):
+    def set_landmark_point(self, coords, i):
         if self.points[i] is not None:
             self.points[i] = coords
 
@@ -83,15 +86,17 @@ class Image:
         else:
             print("no landmark points marked \n")
 
+    def set_landmarks_array(self, pdm):
+        self.points = pdm.get_mean_shape().tolist()
+
     def get_display_image(self):
         # get image with notified landmark points on it
 
         display_image = self.image.copy()
-
         for point in self.points:
+            index = self.points.index(point) + 1
             x = point[0]
             y = point[1]
-            index = self.points.index(point) + 1
             cv.rectangle(display_image, (x - 1, y - 1), (x + 1, y + 1), (200, 0, 0), -1)
             cv.putText(display_image, str(index), (x + 1, y - 1), cv.FONT_HERSHEY_PLAIN, 1.0, (200, 0, 0))
 
@@ -141,18 +146,18 @@ def mouse_input(event, x, y, flags, img):
         point = img.get_landmark_point(g_coords)
         if point is not None:
             g_index = point[2]
-            img.set_landmark_point(g_index, g_coords)
+            img.set_landmark_point(g_coords, g_index)
 
     if event == cv.EVENT_LBUTTONUP:
         if g_index == -1:
             img.add_landmark_point(x, y)
         else:
-            img.set_landmark_point(g_index, (x, y))
+            img.set_landmark_point((x, y), g_index)
             g_index = -1
 
     if event == cv.EVENT_MOUSEMOVE:
         if g_index != -1:
-            img.set_landmark_point(g_index, (x, y))
+            img.set_landmark_point((x, y), g_index)
             cv.imshow("Image", img.get_display_image())
 
     cv.imshow("Image", img.get_display_image())
