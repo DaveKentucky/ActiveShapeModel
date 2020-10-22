@@ -16,7 +16,8 @@ class PDM:
         Performs procrustes analysis of given shape with reference mean shape
         Calculates a new mean shape and mean distance between shapes
 
-        :param shape: (2nx1 NumPy array) a shape to be aligned to the mean
+        :param shape: a shape to be aligned to the mean
+        :type shape: numpy.ndarray
         :return: None
         """
 
@@ -35,4 +36,9 @@ class PDM:
                 self.distance = new_distance
 
     def get_mean_shape(self):
+        """
+        Returns the mean shape of the PDM scaled into array of points
+        :return: model's mean shape
+        :rtype: numpy.ndarray[float, float]
+        """
         return self.mean_shape.reshape(-1, 2)

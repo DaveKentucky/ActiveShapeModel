@@ -8,8 +8,9 @@ def get_translation(shape):
     """
     Calculates a translation for x and y axis that centers shape around the origin
 
-    :param shape: (2n x 1 NumPy array) an array containing x coordinates of shape points as first column
+    :param shape: an array containing x coordinates of shape points as first column
     and y coords as second column
+    :type shape: numpy.ndarray
     :return: translation([x,y]) a NumPy array with x and y translation coordinates
     :rtype: numpy.array[int]
     """
@@ -24,8 +25,9 @@ def translate(shape):
     """
     Translates shape to the origin
 
-    :param 2n x 1 NumPy array shape:  an array containing x coordinates of shape points as first column
+    :param shape:  an array containing x coordinates of shape points as first column
     and y coords as second column
+    :type shape: numpy.ndarray
     :return: None
     """
 
@@ -38,8 +40,10 @@ def get_rotation_scale(reference_shape, shape):
     """
     Calculates rotation and scale that would optimally align shape with reference shape
 
-    :param 2nx1 NumPy array reference_shape: a shape that serves as reference for scaling and alignment
-    :param 2nx1 NumPy array shape: a shape that is scaled and aligned
+    :param reference_shape: a shape that serves as reference for scaling and alignment
+    :type reference_shape: numpy.ndarray
+    :param shape: a shape that is scaled and aligned
+    :type shape: numpy.ndarray
     :return: scale: a scaling factor, theta: a rotation angle in radians
     :rtype: (float, float)
     """
@@ -62,21 +66,27 @@ def get_rotation_scale(reference_shape, shape):
 
 
 def get_rotation_matrix(theta):
+    """
+    Returns the object's rotation matrix
+
+    :param theta: rotation angle in radians
+    :type theta: float
+    :return: rotation matrix
+    :rtype: numpy.ndarray
+    """
     return np.array([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
-
-
-def scale(shape, new_scale):
-    return shape / new_scale
 
 
 def rotate(shape, theta):
     """
     Rotates a shape by angle theta Assumes a shape is centered around origin
 
-    :param shape: (2nx1 NumPy array) a shape to be rotated
-    :param theta: (float) angle in radians
-    :return: (2nx1 NumPy array) a rotated shape
-    :rtype: numpy.array[float]
+    :param shape: a shape to be rotated
+    :type shape: numpy.ndarray
+    :param theta: angle in radians
+    :type theta: float
+    :return: a rotated shape
+    :rtype: numpy.ndarray[float]
     """
 
     matrix = get_rotation_matrix(theta)
@@ -94,10 +104,12 @@ def procrustes_analysis(reference_shape, shape):
     """
     Scales, and rotates a shape optimally to be aligned with a reference shape
 
-    :param reference_shape: (2nx1 NumPy array) a shape that serves as reference alignment
+    :param reference_shape: a shape that serves as reference alignment
+    :type reference_shape: numpy.ndarray
     :param shape: (2nx1 NumPy array) a shape that is aligned
-    :return: aligned_shape(2nx1 NumPy array): an aligned shape translated to the location of reference shape
-    :rtype: numpy.array[float]
+    :type shape: numpy.ndarray
+    :return: aligned_shape: an aligned shape translated to the location of reference shape
+    :rtype: numpy.ndarray[float]
     """
 
     # copy both shapes in case originals are needed later
@@ -121,8 +133,10 @@ def procrustes_distance(reference_shape, shape):
     """
     Counts the square root of the sum of squared differences in the positions of the landmarks in two shapes
 
-    :param reference_shape: (2nx1 NumPy array) a shape that serves as reference alignment
-    :param shape: (2nx1 NumPy array) a shape that is aligned
+    :param reference_shape: a shape that serves as reference alignment
+    :type reference_shape: numpy.ndarray
+    :param shape: a shape that is aligned
+    :type shape: numpy.ndarray
     :return: the distance between shapes
     :rtype: float
     """

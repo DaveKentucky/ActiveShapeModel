@@ -24,10 +24,19 @@ class Image:
         self.width = self.__image.shape[1]
 
         # scale the image ot desired size
-        self.image = self.prepare_image(self.width, self.height)  # scaled and greyscale image
+        self.prepare_image(self.width, self.height)  # scaled and greyscale image
         print("w: " + str(self.width) + ", h: " + str(self.height))
 
     def prepare_image(self, w, h):
+        """
+        Scales the image down to ease the model calculations and saves it to separate variable
+
+        :param w: original image width in pixels
+        :type w: int
+        :param h: original image height in pixels
+        :type h: int
+        :return: None
+        """
         # w - original image width in pixels
         # h - original image height in pixels
 
@@ -44,9 +53,18 @@ class Image:
 
         self.height = image.shape[0]
         self.width = image.shape[1]
-        return image
+        self.image = image
 
     def add_landmark_point(self, x, y):
+        """
+        Adds a new landmark point to the array
+
+        :param x: X coordinate of the landmark point
+        :type x: int
+        :param y: Y coordinate of the landmark point
+        :type y: int
+        :return: None
+        """
         # add new point to the list of landmark points
         # and draw it on the displayed image
 
@@ -57,6 +75,16 @@ class Image:
             print(point)
 
     def get_landmark_point(self, coords, i=-1):
+        """
+        Returns the landmark point at given index or close to given point of the image
+
+        :param coords: point coordinates on the image
+        :type coords: tuple[int, int]
+        :param i: index of the landmark point in array
+        :type i: int
+        :return: landmark point coordinates
+        :rtype: tuple[int, int]
+        """
         if i >= 0:
             return self.points[i]
 
@@ -70,11 +98,22 @@ class Image:
                 return _tuple
 
     def set_landmark_point(self, coords, i):
+        """
+        Sets landmark point in array to given coordinates
+
+        :param coords: new coordinates of the point
+        :type coords: tuple[int, int]
+        :param i: index of the landmark point in array
+        :type i: int
+        :return: None
+        """
         if self.points[i] is not None:
             self.points[i] = coords
 
     def remove_landmark_point(self):
-        # remove the last landmark point from the list
+        """
+        Removes the last landmark point from the array
+        """
 
         if len(self.points) > 0:
             del self.points[-1]
@@ -87,9 +126,22 @@ class Image:
             print("no landmark points marked \n")
 
     def set_landmarks_array(self, pdm):
+        """
+        Sets the landmark points array to given point distribution model's mean shape
+
+        :param pdm: point distribution model object
+        :type pdm: pdm.PDM
+        :return: None
+        """
         self.points = pdm.get_mean_shape().tolist()
 
     def get_display_image(self):
+        """
+        Returns copy of the image with marked landmark points on it
+
+        :return: image copy with landmarks
+        :rtype: numpy.ndarray
+        """
         # get image with notified landmark points on it
 
         display_image = self.image.copy()
@@ -137,6 +189,20 @@ g_index = -1
 
 
 def mouse_input(event, x, y, flags, img):
+    """
+    Resolve mouse input on the image
+
+    :param event: OpenCV event
+    :type event: cv2.EVENT
+    :param x: X coordinate of the mouse cursor
+    :type x: int
+    :param y: Y coordinate of the mouse cursor
+    :type y: int
+    :param flags: additional flags
+    :param img: image object
+    :type img: Image
+    :return: None
+    """
     # resolve mouse input on image
 
     global g_coords, g_index
