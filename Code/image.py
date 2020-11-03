@@ -8,7 +8,12 @@ class Image:
     # an image object with its parameters and landmark points
 
     def __init__(self, filename):
-        # filename - image file from 'Code' directory
+        """
+        Initializes the object with image read from file
+
+        :param filename: name of the image file
+        :type filename: str
+        """
 
         # read image from file
         path = "./Data/" + filename
