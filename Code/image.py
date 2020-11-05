@@ -76,9 +76,9 @@ class Image:
 
         self.points.append([x, y])
 
-        print("landmark points marked:")
-        for point in self.points:
-            print(point)
+        print("landmark point marked:")
+
+        print(self.points[len(self.points) - 1])
 
     def get_landmark_point(self, coords, i=-1):
         """
@@ -159,6 +159,7 @@ class Image:
 
         return display_image
 
+    # TODO remove not used functions
     def get_landmarks_mask(self):
         # get the importance mask based on marked landmark points
 

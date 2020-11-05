@@ -109,7 +109,7 @@ def procrustes_analysis(reference_shape, shape):
     :param shape: (2nx1 NumPy array) a shape that is aligned
     :type shape: numpy.ndarray
     :return: aligned_shape: an aligned shape translated to the location of reference shape
-    :rtype: numpy.ndarray[float]
+    :rtype: numpy.ndarray[int]
     """
 
     # copy both shapes in case originals are needed later
@@ -152,8 +152,8 @@ def procrustes_distance(reference_shape, shape):
     return dist
 
 
+# example code showing procrustes analysis of simple shapes
 if __name__ == '__main__':
-    # example code showing procrustes analysis of simple shapes
 
     background = np.zeros([400, 400, 3], np.uint8)
     first_shape = np.array([107, 205, 190, 216, 183, 121, 102, 110])

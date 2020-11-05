@@ -22,12 +22,13 @@ class PDM:
         :type name: str
         """
         self.mean_shape = None
+        self.shapes = None
         self.distance = None
         self.canvas = 255 * np.ones([512, 512, 3], np.uint8)
 
-        self.build_model_from_images(directory, count, key)
+        self.build_model_from_images(directory, count, name)
 
-    def add_shape(self, shape):
+    def add_shape(self, shape, color):
         """
         Performs procrustes analysis of given shape with reference mean shape
         Calculates a new mean shape and mean distance between shapes
@@ -42,7 +43,8 @@ class PDM:
         if self.mean_shape is None:
             self.mean_shape = array
             self.distance = 0
-            self.draw_shape(list(array), 1)
+            self.draw_shape(list(array), color)
+            self.shapes = array
         else:
             if len(array) == len(self.mean_shape):
                 shapes_list = []
@@ -58,6 +60,8 @@ class PDM:
                 new_shape[::2] = new_shape[::2] + x
                 new_shape[1::2] = new_shape[1::2] + y
 
+                self.shapes = np.append([self.shapes], [new_shape], axis=0)
+                print(self.shapes.shape)
                 shapes[1] = new_shape
                 new_mean = np.mean(shapes, 0)
                 new_distance = procrustes.procrustes_distance(new_mean, self.mean_shape)
@@ -69,7 +73,7 @@ class PDM:
                     self.mean_shape = new_mean
                     self.distance = new_distance
 
-            self.draw_shape(list(array), 2)
+            self.draw_shape(list(array), color)
 
     def get_mean_shape(self):
         """
@@ -162,7 +166,8 @@ class PDM:
                 elif key == ord('k'):
                     img.convert_landmarks()
                 elif key == ord('n'):
-                    self.add_shape(img.points)
+                    color = (i % 3) + 1
+                    self.add_shape(img.points, color)
                     break
 
         self.save_mean_shape("mean_shape.jpg")
