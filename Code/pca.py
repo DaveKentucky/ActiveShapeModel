@@ -30,8 +30,7 @@ def get_eigenvalues_and_eigenvectors(data):
     :return: arrays of eigenvalues and eigenvectors
     :rtype: (numpy.ndarray, numpy.ndarray)
     """
-
-    cov_mat = np.cov([data[0, :], data[1, :], data[2, :], data[3, :], data[4, :], data[5, :]])
+    cov_mat = np.cov([data[i, :] for i in range(data.shape[0])])
     print('Covariance Matrix:\n', cov_mat)
 
     eig_val, eig_vec = np.linalg.eig(cov_mat)
@@ -77,6 +76,29 @@ def get_desired_eigenvalues_count(eigenvalues, proportion):
         return -1
 
 
+def get_parameters_matrix(eigenvectors, data, mean):
+    """
+    Computes the matrix of parameters allowing to approximate points' positions
+
+    :param eigenvectors: transposed matrix of eigenvectors
+    :type eigenvectors: numpy.ndarray
+    :param data: transposed matrix of samples data
+    :type data: numpy.ndarray
+    :param mean: vector of every parameter's mean values
+    :type mean: numpy.ndarray
+    :return:
+    """
+
+    if data.shape[0] == mean.shape[0]:
+        distance = data - mean
+
+        parameters = np.matmul(eigenvectors, distance)
+        print("\nParameters matrix:\n", parameters)
+        return parameters
+    else:
+        return None
+
+
 def principal_component_analysis(samples, proportion):
     """
     Reduces the dimensionality of given array keeping at least given proportion of the data
@@ -116,6 +138,7 @@ def principal_component_analysis(samples, proportion):
                 desired_eigenvalues[i] = eig_pairs[i][0]
                 desired_eigenvectors[i] = eig_pairs[i][1]
 
+            # get_parameters_matrix(desired_eigenvectors, transposed, mean)
             return desired_eigenvalues, desired_eigenvectors
         else:
             return eig_val, eig_vec
@@ -132,7 +155,8 @@ def principal_component_analysis(samples, proportion):
 # example code showing procrustes analysis of simple shapes
 if __name__ == '__main__':
 
-    array = np.array([[1, 4, 2, 2, 8, 4], [2, 4, 3, 3, 7, 5], [1, 5, 2, 3, 9, 4], [2, 6, 2, 3, 8, 5]], np.int32)
+    array = np.array([[1, 4, 2, 2, 8, 4, 7, 3], [2, 4, 3, 3, 7, 5, 8, 3],
+                      [1, 5, 2, 3, 9, 4, 8, 2], [2, 6, 2, 3, 8, 5, 9, 3]], np.int32)
     eigvals, eigvecs = principal_component_analysis(array, 0.99)
 
     print("\nEigenvalues:")

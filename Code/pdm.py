@@ -84,14 +84,16 @@ class PDM:
         """
         return self.mean_shape.reshape(-1, 2)
 
-    def draw_shape(self, shape, c):
+    def draw_shape(self, shape, c, canvas=None):
         """
         Draws the points from given shape on the object's canvas
 
-        :param shape: shape to be drawn
-        :type shape: numpy.ndarray
+        :param shape: shape to be drawn (2D array)
+        :type shape: list
         :param c: color code
         :type c: int
+        :param canvas: target image to draw shape on (object's canvas image if None)
+        :type canvas: numpy.ndarray
         :return: None
         """
         points = np.array(shape)
@@ -106,10 +108,13 @@ class PDM:
         elif c == 3:
             color = (0, 0, 255)
 
+        if canvas is None:
+            canvas = self.canvas
+
         for point in points:
             x = point[0]
             y = point[1]
-            cv.rectangle(self.canvas, (x - 1, y - 1), (x + 1, y + 1), color, -1)
+            cv.rectangle(canvas, (x - 1, y - 1), (x + 1, y + 1), color, -1)
 
     def save_mean_shape(self, filename):
         """

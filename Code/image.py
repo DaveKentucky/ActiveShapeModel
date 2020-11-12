@@ -149,7 +149,7 @@ class Image:
         """
         # get image with notified landmark points on it
 
-        display_image = self.__image.copy()
+        display_image = self.image.copy()
         for point in self.points:
             index = self.points.index(point) + 1
             x = point[0]
