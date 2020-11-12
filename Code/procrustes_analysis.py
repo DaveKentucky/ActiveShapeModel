@@ -36,7 +36,7 @@ def translate(shape):
     shape[1::2] -= mean_y
 
 
-def get_rotation_scale(reference_shape, shape):
+def get_scale_and_rotation(reference_shape, shape):
     """
     Calculates rotation and scale that would optimally align shape with reference shape
 
@@ -120,7 +120,7 @@ def procrustes_analysis(reference_shape, shape):
     translate(temp_sh)
 
     # get scale and rotation
-    scale, theta = get_rotation_scale(temp_ref, temp_sh)
+    scale, theta = get_scale_and_rotation(temp_ref, temp_sh)
 
     # scale, rotate both shapes
     temp_sh = temp_sh / scale
@@ -156,9 +156,9 @@ def procrustes_distance(reference_shape, shape):
 if __name__ == '__main__':
 
     background = np.zeros([400, 400, 3], np.uint8)
-    first_shape = np.array([107, 205, 190, 216, 183, 121, 102, 110])
-    second_shape = np.array([98, 203, 180, 212, 198, 101, 116, 99])
-    colors = [(200, 0, 0), (0, 0, 200), (0, 200, 0)]
+    first_shape = np.array([100, 80, 100, 280, 300, 280])
+    second_shape = np.array([240, 350, 340, 350, 340, 250])
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
 
     first_points = first_shape.reshape((-1, 1, 2))
     second_points = second_shape.reshape((-1, 1, 2))

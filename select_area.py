@@ -39,7 +39,7 @@ class DragRectangle:
     # Limits on the canvas
     keepWithin = Rectangle()
     # To store rectangle
-    outRect = Rectangle()
+    rectangle = Rectangle()
     # To store rectangle anchor point
     # Here the rect class object is used to store
     # the distance in the x and y direction from
@@ -76,6 +76,12 @@ class DragRectangle:
     hold = False
 
 
+def get_area_rectangle(drag_object):
+
+    return drag_object.rectangle.x, drag_object.rectangle.y,\
+           drag_object.rectangle.x + drag_object.rectangle.w, drag_object.rectangle.y + drag_object.rectangle.h
+
+
 def init(drag_object, img, window_name, window_width, window_height):
 
     # Image
@@ -91,10 +97,10 @@ def init(drag_object, img, window_name, window_width, window_height):
     drag_object.keepWithin.h = window_height
 
     # Set rect to zero width and height
-    drag_object.outRect.x = 0
-    drag_object.outRect.y = 0
-    drag_object.outRect.w = 0
-    drag_object.outRect.h = 0
+    drag_object.rectangle.x = 0
+    drag_object.rectangle.y = 0
+    drag_object.rectangle.w = 0
+    drag_object.rectangle.h = 0
 
 
 def drag_rectangle(event, x, y, flags, drag_object):
@@ -136,7 +142,7 @@ def mouse_double_click(eX, eY, drag_object):
 
     if drag_object.active:
 
-        if rectangle_point(eX, eY, drag_object.outRect.x, drag_object.outRect.y, drag_object.outRect.w, drag_object.outRect.h):
+        if rectangle_point(eX, eY, drag_object.rectangle.x, drag_object.rectangle.y, drag_object.rectangle.w, drag_object.rectangle.h):
             drag_object.return_flag = True
             cv2.destroyWindow(drag_object.window_name)
 
@@ -145,67 +151,67 @@ def mouse_down(eX, eY, drag_object):
 
     if drag_object.active:
 
-        if rectangle_point(eX, eY, drag_object.outRect.x - drag_object.sBlk,
-                           drag_object.outRect.y - drag_object.sBlk,
+        if rectangle_point(eX, eY, drag_object.rectangle.x - drag_object.sBlk,
+                           drag_object.rectangle.y - drag_object.sBlk,
                            drag_object.sBlk * 2, drag_object.sBlk * 2):
             drag_object.TL = True
             return
 
-        if rectangle_point(eX, eY, drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk,
-                           drag_object.outRect.y - drag_object.sBlk,
+        if rectangle_point(eX, eY, drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk,
+                           drag_object.rectangle.y - drag_object.sBlk,
                            drag_object.sBlk * 2, drag_object.sBlk * 2):
             drag_object.TR = True
             return
 
-        if rectangle_point(eX, eY, drag_object.outRect.x - drag_object.sBlk,
-                           drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk,
+        if rectangle_point(eX, eY, drag_object.rectangle.x - drag_object.sBlk,
+                           drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk,
                            drag_object.sBlk * 2, drag_object.sBlk * 2):
             drag_object.BL = True
             return
 
-        if rectangle_point(eX, eY, drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk,
-                           drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk,
+        if rectangle_point(eX, eY, drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk,
+                           drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk,
                            drag_object.sBlk * 2, drag_object.sBlk * 2):
             drag_object.BR = True
             return
 
-        if rectangle_point(eX, eY, drag_object.outRect.x + drag_object.outRect.w / 2 - drag_object.sBlk,
-                           drag_object.outRect.y - drag_object.sBlk,
+        if rectangle_point(eX, eY, drag_object.rectangle.x + drag_object.rectangle.w / 2 - drag_object.sBlk,
+                           drag_object.rectangle.y - drag_object.sBlk,
                            drag_object.sBlk * 2, drag_object.sBlk * 2):
             drag_object.TM = True
             return
 
-        if rectangle_point(eX, eY, drag_object.outRect.x + drag_object.outRect.w / 2 - drag_object.sBlk,
-                           drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk,
+        if rectangle_point(eX, eY, drag_object.rectangle.x + drag_object.rectangle.w / 2 - drag_object.sBlk,
+                           drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk,
                            drag_object.sBlk * 2, drag_object.sBlk * 2):
             drag_object.BM = True
             return
 
-        if rectangle_point(eX, eY, drag_object.outRect.x - drag_object.sBlk,
-                           drag_object.outRect.y + drag_object.outRect.h / 2 - drag_object.sBlk,
+        if rectangle_point(eX, eY, drag_object.rectangle.x - drag_object.sBlk,
+                           drag_object.rectangle.y + drag_object.rectangle.h / 2 - drag_object.sBlk,
                            drag_object.sBlk * 2, drag_object.sBlk * 2):
             drag_object.LM = True
             return
 
-        if rectangle_point(eX, eY, drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk,
-                           drag_object.outRect.y + drag_object.outRect.h / 2 - drag_object.sBlk,
+        if rectangle_point(eX, eY, drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk,
+                           drag_object.rectangle.y + drag_object.rectangle.h / 2 - drag_object.sBlk,
                            drag_object.sBlk * 2, drag_object.sBlk * 2):
             drag_object.RM = True
             return
 
         # This has to be below all of the other conditions
-        if rectangle_point(eX, eY, drag_object.outRect.x, drag_object.outRect.y, drag_object.outRect.w, drag_object.outRect.h):
-            drag_object.anchor.x = eX - drag_object.outRect.x
-            drag_object.anchor.w = drag_object.outRect.w - drag_object.anchor.x
-            drag_object.anchor.y = eY - drag_object.outRect.y
-            drag_object.anchor.h = drag_object.outRect.h - drag_object.anchor.y
+        if rectangle_point(eX, eY, drag_object.rectangle.x, drag_object.rectangle.y, drag_object.rectangle.w, drag_object.rectangle.h):
+            drag_object.anchor.x = eX - drag_object.rectangle.x
+            drag_object.anchor.w = drag_object.rectangle.w - drag_object.anchor.x
+            drag_object.anchor.y = eY - drag_object.rectangle.y
+            drag_object.anchor.h = drag_object.rectangle.h - drag_object.anchor.y
             drag_object.hold = True
 
             return
 
     else:
-        drag_object.outRect.x = eX
-        drag_object.outRect.y = eY
+        drag_object.rectangle.x = eX
+        drag_object.rectangle.y = eY
         drag_object.drag = True
         drag_object.active = True
         return
@@ -214,77 +220,77 @@ def mouse_down(eX, eY, drag_object):
 def mouse_move(eX, eY, drag_object):
 
     if drag_object.drag & drag_object.active:
-        drag_object.outRect.w = eX - drag_object.outRect.x
-        drag_object.outRect.h = eY - drag_object.outRect.y
+        drag_object.rectangle.w = eX - drag_object.rectangle.x
+        drag_object.rectangle.h = eY - drag_object.rectangle.y
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.hold:
-        drag_object.outRect.x = eX - drag_object.anchor.x
-        drag_object.outRect.y = eY - drag_object.anchor.y
+        drag_object.rectangle.x = eX - drag_object.anchor.x
+        drag_object.rectangle.y = eY - drag_object.anchor.y
 
-        if drag_object.outRect.x < drag_object.keepWithin.x:
-            drag_object.outRect.x = drag_object.keepWithin.x
+        if drag_object.rectangle.x < drag_object.keepWithin.x:
+            drag_object.rectangle.x = drag_object.keepWithin.x
 
-        if drag_object.outRect.y < drag_object.keepWithin.y:
-            drag_object.outRect.y = drag_object.keepWithin.y
+        if drag_object.rectangle.y < drag_object.keepWithin.y:
+            drag_object.rectangle.y = drag_object.keepWithin.y
 
-        if (drag_object.outRect.x + drag_object.outRect.w) > (drag_object.keepWithin.x + drag_object.keepWithin.w - 1):
-            drag_object.outRect.x = drag_object.keepWithin.x + drag_object.keepWithin.w - 1 - drag_object.outRect.w
+        if (drag_object.rectangle.x + drag_object.rectangle.w) > (drag_object.keepWithin.x + drag_object.keepWithin.w - 1):
+            drag_object.rectangle.x = drag_object.keepWithin.x + drag_object.keepWithin.w - 1 - drag_object.rectangle.w
 
-        if (drag_object.outRect.y + drag_object.outRect.h) > (drag_object.keepWithin.y + drag_object.keepWithin.h - 1):
-            drag_object.outRect.y = drag_object.keepWithin.y + drag_object.keepWithin.h - 1 - drag_object.outRect.h
+        if (drag_object.rectangle.y + drag_object.rectangle.h) > (drag_object.keepWithin.y + drag_object.keepWithin.h - 1):
+            drag_object.rectangle.y = drag_object.keepWithin.y + drag_object.keepWithin.h - 1 - drag_object.rectangle.h
 
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.TL:
-        drag_object.outRect.w = (drag_object.outRect.x + drag_object.outRect.w) - eX
-        drag_object.outRect.h = (drag_object.outRect.y + drag_object.outRect.h) - eY
-        drag_object.outRect.x = eX
-        drag_object.outRect.y = eY
+        drag_object.rectangle.w = (drag_object.rectangle.x + drag_object.rectangle.w) - eX
+        drag_object.rectangle.h = (drag_object.rectangle.y + drag_object.rectangle.h) - eY
+        drag_object.rectangle.x = eX
+        drag_object.rectangle.y = eY
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.BR:
-        drag_object.outRect.w = eX - drag_object.outRect.x
-        drag_object.outRect.h = eY - drag_object.outRect.y
+        drag_object.rectangle.w = eX - drag_object.rectangle.x
+        drag_object.rectangle.h = eY - drag_object.rectangle.y
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.TR:
-        drag_object.outRect.h = (drag_object.outRect.y + drag_object.outRect.h) - eY
-        drag_object.outRect.y = eY
-        drag_object.outRect.w = eX - drag_object.outRect.x
+        drag_object.rectangle.h = (drag_object.rectangle.y + drag_object.rectangle.h) - eY
+        drag_object.rectangle.y = eY
+        drag_object.rectangle.w = eX - drag_object.rectangle.x
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.BL:
-        drag_object.outRect.w = (drag_object.outRect.x + drag_object.outRect.w) - eX
-        drag_object.outRect.x = eX
-        drag_object.outRect.h = eY - drag_object.outRect.y
+        drag_object.rectangle.w = (drag_object.rectangle.x + drag_object.rectangle.w) - eX
+        drag_object.rectangle.x = eX
+        drag_object.rectangle.h = eY - drag_object.rectangle.y
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.TM:
-        drag_object.outRect.h = (drag_object.outRect.y + drag_object.outRect.h) - eY
-        drag_object.outRect.y = eY
+        drag_object.rectangle.h = (drag_object.rectangle.y + drag_object.rectangle.h) - eY
+        drag_object.rectangle.y = eY
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.BM:
-        drag_object.outRect.h = eY - drag_object.outRect.y
+        drag_object.rectangle.h = eY - drag_object.rectangle.y
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.LM:
-        drag_object.outRect.w = (drag_object.outRect.x + drag_object.outRect.w) - eX
-        drag_object.outRect.x = eX
+        drag_object.rectangle.w = (drag_object.rectangle.x + drag_object.rectangle.w) - eX
+        drag_object.rectangle.x = eX
         clear_canvas_and_draw(drag_object)
         return
 
     if drag_object.RM:
-        drag_object.outRect.w = eX - drag_object.outRect.x
+        drag_object.rectangle.w = eX - drag_object.rectangle.x
         clear_canvas_and_draw(drag_object)
         return
 
@@ -294,7 +300,7 @@ def mouse_up(eX, eY, drag_object):
     drag_object.drag = False
     disable_resize_buttons(drag_object)
     straighten_up_rectangle(drag_object)
-    if drag_object.outRect.w == 0 or drag_object.outRect.h == 0:
+    if drag_object.rectangle.w == 0 or drag_object.rectangle.h == 0:
         drag_object.active = False
 
     clear_canvas_and_draw(drag_object)
@@ -310,22 +316,22 @@ def disable_resize_buttons(drag_object):
 
 def straighten_up_rectangle(drag_object):
 
-    if drag_object.outRect.w < 0:
-        drag_object.outRect.x = drag_object.outRect.x + drag_object.outRect.w
-        drag_object.outRect.w = -drag_object.outRect.w
+    if drag_object.rectangle.w < 0:
+        drag_object.rectangle.x = drag_object.rectangle.x + drag_object.rectangle.w
+        drag_object.rectangle.w = -drag_object.rectangle.w
 
-    if drag_object.outRect.h < 0:
-        drag_object.outRect.y = drag_object.outRect.y + drag_object.outRect.h
-        drag_object.outRect.h = -drag_object.outRect.h
+    if drag_object.rectangle.h < 0:
+        drag_object.rectangle.y = drag_object.rectangle.y + drag_object.rectangle.h
+        drag_object.rectangle.h = -drag_object.rectangle.h
 
 
 def clear_canvas_and_draw(drag_object):
 
     # Draw
     tmp = drag_object.image.copy()
-    cv2.rectangle(tmp, (drag_object.outRect.x, drag_object.outRect.y),
-                  (drag_object.outRect.x + drag_object.outRect.w,
-                   drag_object.outRect.y + drag_object.outRect.h), (0, 255, 0), 2)
+    cv2.rectangle(tmp, (drag_object.rectangle.x, drag_object.rectangle.y),
+                  (drag_object.rectangle.x + drag_object.rectangle.w,
+                   drag_object.rectangle.y + drag_object.rectangle.h), (0, 255, 0), 2)
     draw_select_markers(tmp, drag_object)
     cv2.imshow(drag_object.window_name, tmp)
     cv2.waitKey()
@@ -335,58 +341,58 @@ def draw_select_markers(image, drag_object):
 
     # Top-Left
     cv2.rectangle(image,
-                  (int(drag_object.outRect.x - drag_object.sBlk),
-                   int(drag_object.outRect.y - drag_object.sBlk)),
-                  (int(drag_object.outRect.x - drag_object.sBlk + drag_object.sBlk * 2),
-                   int(drag_object.outRect.y - drag_object.sBlk + drag_object.sBlk * 2)),
+                  (int(drag_object.rectangle.x - drag_object.sBlk),
+                   int(drag_object.rectangle.y - drag_object.sBlk)),
+                  (int(drag_object.rectangle.x - drag_object.sBlk + drag_object.sBlk * 2),
+                   int(drag_object.rectangle.y - drag_object.sBlk + drag_object.sBlk * 2)),
                   (0, 255, 0), 2)
     # Top-Right
     cv2.rectangle(image,
-                  (int(drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk),
-                   int(drag_object.outRect.y - drag_object.sBlk)),
-                  (int(drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk + drag_object.sBlk * 2),
-                   int(drag_object.outRect.y - drag_object.sBlk + drag_object.sBlk * 2)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk),
+                   int(drag_object.rectangle.y - drag_object.sBlk)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk + drag_object.sBlk * 2),
+                   int(drag_object.rectangle.y - drag_object.sBlk + drag_object.sBlk * 2)),
                   (0, 255, 0), 2)
     # Bottom-Left
     cv2.rectangle(image,
-                  (int(drag_object.outRect.x - drag_object.sBlk),
-                   int(drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk)),
-                  (int(drag_object.outRect.x - drag_object.sBlk + drag_object.sBlk * 2),
-                   int(drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk + drag_object.sBlk * 2)),
+                  (int(drag_object.rectangle.x - drag_object.sBlk),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk)),
+                  (int(drag_object.rectangle.x - drag_object.sBlk + drag_object.sBlk * 2),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk + drag_object.sBlk * 2)),
                   (0, 255, 0), 2)
     # Bottom-Right
     cv2.rectangle(image,
-                  (int(drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk),
-                   int(drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk)),
-                  (int(drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk + drag_object.sBlk * 2),
-                   int(drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk + drag_object.sBlk * 2)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk + drag_object.sBlk * 2),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk + drag_object.sBlk * 2)),
                   (0, 255, 0), 2)
 
     # Top-Mid
     cv2.rectangle(image,
-                  (int(drag_object.outRect.x + drag_object.outRect.w / 2 - drag_object.sBlk),
-                   int(drag_object.outRect.y - drag_object.sBlk)),
-                  (int(drag_object.outRect.x + drag_object.outRect.w / 2 - drag_object.sBlk + drag_object.sBlk * 2),
-                   int(drag_object.outRect.y - drag_object.sBlk + drag_object.sBlk * 2)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w / 2 - drag_object.sBlk),
+                   int(drag_object.rectangle.y - drag_object.sBlk)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w / 2 - drag_object.sBlk + drag_object.sBlk * 2),
+                   int(drag_object.rectangle.y - drag_object.sBlk + drag_object.sBlk * 2)),
                   (0, 255, 0), 2)
     # Bottom-Mid
     cv2.rectangle(image,
-                  (int(drag_object.outRect.x + drag_object.outRect.w / 2 - drag_object.sBlk),
-                   int(drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk)),
-                  (int(drag_object.outRect.x + drag_object.outRect.w / 2 - drag_object.sBlk + drag_object.sBlk * 2),
-                   int(drag_object.outRect.y + drag_object.outRect.h - drag_object.sBlk + drag_object.sBlk * 2)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w / 2 - drag_object.sBlk),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w / 2 - drag_object.sBlk + drag_object.sBlk * 2),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h - drag_object.sBlk + drag_object.sBlk * 2)),
                   (0, 255, 0), 2)
     # Left-Mid
     cv2.rectangle(image,
-                  (int(drag_object.outRect.x - drag_object.sBlk),
-                   int(drag_object.outRect.y + drag_object.outRect.h / 2 - drag_object.sBlk)),
-                  (int(drag_object.outRect.x - drag_object.sBlk + drag_object.sBlk * 2),
-                   int(drag_object.outRect.y + drag_object.outRect.h / 2 - drag_object.sBlk + drag_object.sBlk * 2)),
+                  (int(drag_object.rectangle.x - drag_object.sBlk),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h / 2 - drag_object.sBlk)),
+                  (int(drag_object.rectangle.x - drag_object.sBlk + drag_object.sBlk * 2),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h / 2 - drag_object.sBlk + drag_object.sBlk * 2)),
                   (0, 255, 0), 2)
     # Right-Mid
     cv2.rectangle(image,
-                  (int(drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk),
-                   int(drag_object.outRect.y + drag_object.outRect.h / 2 - drag_object.sBlk)),
-                  (int(drag_object.outRect.x + drag_object.outRect.w - drag_object.sBlk + drag_object.sBlk * 2),
-                   int(drag_object.outRect.y + drag_object.outRect.h / 2 - drag_object.sBlk + drag_object.sBlk * 2)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h / 2 - drag_object.sBlk)),
+                  (int(drag_object.rectangle.x + drag_object.rectangle.w - drag_object.sBlk + drag_object.sBlk * 2),
+                   int(drag_object.rectangle.y + drag_object.rectangle.h / 2 - drag_object.sBlk + drag_object.sBlk * 2)),
                   (0, 255, 0), 2)
