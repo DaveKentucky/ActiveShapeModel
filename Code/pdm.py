@@ -21,8 +21,10 @@ class PDM:
         :param name: common name of all the images to load
         :type name: str
         """
+
         self.mean_shape = None
         self.shapes = None
+        self.points_count = 0
         self.distance = None
         self.canvas = 255 * np.ones([512, 512, 3], np.uint8)
 
@@ -37,16 +39,21 @@ class PDM:
         :type shape: numpy.ndarray
         :return: None
         """
+
         array = np.array(shape)
         array = array.reshape(2 * len(shape))
 
+        # add first shape as the mean shape
         if self.mean_shape is None:
             self.mean_shape = array
+            self.points_count = len(shape)
             self.distance = 0
             self.draw_shape(list(array), color)
             self.shapes = array
         else:
-            if len(array) == len(self.mean_shape):
+            # check if the shapes' lengths are identical
+            if len(shape) == self.points_count:
+                # prepare data of a new shape and the mean shape for procrustes analysis
                 shapes_list = []
                 shapes_list.append(self.mean_shape)
                 shapes_list.append(array)
@@ -54,23 +61,31 @@ class PDM:
                 shapes[0] = shapes_list[0]
                 shapes[1] = shapes_list[1]
 
+                # save mean shape's translation
                 x, y = procrustes.get_translation(shapes[0])
 
+                # run procrustes analysis on both shapes
                 new_shape = procrustes.procrustes_analysis(self.mean_shape, array)
+
+                # translate aligned shape to mean shape's location
                 new_shape[::2] = new_shape[::2] + x
                 new_shape[1::2] = new_shape[1::2] + y
 
+                # save shapes
                 self.shapes = np.append([self.shapes], [new_shape], axis=0)
                 print(self.shapes.shape)
                 shapes[1] = new_shape
                 new_mean = np.mean(shapes, 0)
                 new_distance = procrustes.procrustes_distance(new_mean, self.mean_shape)
 
+                # check if procrustes distance has changed
                 if new_distance != self.distance:
+                    # update the mean shape including a new and an old mean
                     new_mean = procrustes.procrustes_analysis(self.mean_shape, new_mean)
                     new_mean[::2] = new_mean[::2] + x
                     new_mean[1::2] = new_mean[1::2] + y
 
+                # save results
                 self.mean_shape = new_mean
                 self.distance = new_distance
 
@@ -83,7 +98,8 @@ class PDM:
         :return: model's mean shape
         :rtype: numpy.ndarray[float, float]
         """
-        return self.mean_shape.reshape(-1, 2)
+
+        return self.mean_shape.reshape(self.points_count, 2)
 
     def draw_shape(self, shape, c, canvas=None):
         """
@@ -97,9 +113,12 @@ class PDM:
         :type canvas: numpy.ndarray
         :return: None
         """
-        points = np.array(shape)
-        points = points.reshape(-1, 2)
 
+        # reshape shape into 2D array to enable drawing with OpenCV
+        points = np.array(shape)
+        points = points.reshape(self.points_count, 2)
+
+        # pick a color
         if c == 0:
             color = (0, 0, 0)
         elif c == 1:
@@ -112,6 +131,7 @@ class PDM:
         if canvas is None:
             canvas = self.canvas
 
+        # draw all points on canvas
         for point in points:
             x = point[0]
             y = point[1]
@@ -126,10 +146,13 @@ class PDM:
         :type filename: str
         :return: None
         """
+
+        # save an image of the mean shape
         shape = list(self.mean_shape)
         self.draw_shape(shape, 0)
         cv.imwrite("all_shapes.jpg", self.canvas)
 
+        # save an image of all shapes
         self.canvas = 255 * np.ones([512, 512, 3], np.uint8)
         self.draw_shape(shape, 0)
         cv.imwrite(filename, self.canvas)
@@ -146,6 +169,7 @@ class PDM:
         :type name: str
         :return: None
         """
+
         cv.namedWindow("Image", cv.WINDOW_KEEPRATIO)
         cv.namedWindow("Help image", cv.WINDOW_KEEPRATIO)
 
