@@ -79,8 +79,6 @@ class Image:
 
         self.points.append([x, y])
 
-        print("landmark point marked:")
-
         print(self.points[len(self.points) - 1])
 
     def get_landmark_point(self, coords, i=-1):
@@ -126,12 +124,6 @@ class Image:
         if len(self.points) > 0:
             del self.points[-1]
             print("landmark point deleted")
-            if len(self.points) > 0:
-                print("landmark points marked:")
-                for point in self.points:
-                    print(point)
-        else:
-            print("no landmark points marked \n")
 
     def set_landmarks_array(self, pdm):
         """
