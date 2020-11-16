@@ -2,6 +2,7 @@ import numpy as np
 import procrustes_analysis as procrustes
 import cv2 as cv
 import image
+import database
 from image import Image, mouse_input
 
 
@@ -25,10 +26,11 @@ class PDM:
         self.mean_shape = None  # the mean shape (1D array)
         self.shapes = None      # all shapes (array of 1D arrays)
         self.points_count = 0   # number of points in a single shape
+        self.name = name        # name of the shape
         self.distance = None    # procrustes distance
         self.canvas = 255 * np.ones([512, 512, 3], np.uint8)
 
-        self.build_model_from_images(directory, count, name)
+        self.build_from_images(directory, count, name)
 
     def add_shape(self, shape, color):
         """
@@ -137,10 +139,9 @@ class PDM:
             y = point[1]
             cv.rectangle(canvas, (x - 1, y - 1), (x + 1, y + 1), color, -1)
 
-    def save_mean_shape(self, filename):
+    def save_to_jpg(self, filename):
         """
-        Saves the mean shape of the model to file.
-        Saves an image of all shapes added to additional file
+        Saves model into 2 jpg images (mean shape and all shapes)
 
         :param filename: name of the target file
         :type filename: str
@@ -157,7 +158,15 @@ class PDM:
         self.draw_shape(shape, 0)
         cv.imwrite(filename, self.canvas)
 
-    def build_model_from_images(self, directory, count, name):
+    def save_to_db(self):
+        """
+        Saves model into database
+        """
+
+        my_db, my_cursor = database.create_database()
+        database.insert_pdm(my_db, my_cursor, self.shapes, self.points_count, self.name)
+
+    def build_from_images(self, directory, count, name):
         """
         Loads given set of images and runs manual labeling of points distribution model based on the images
 
@@ -200,4 +209,15 @@ class PDM:
                     self.add_shape(img.points, color)
                     break
 
-        self.save_mean_shape("mean_shape.jpg")
+        self.save_to_jpg("mean_shape.jpg")
+
+    def read_from_db(self, name):
+        """
+        Read model from database
+
+        :param name: name of the model
+        :type name: str
+        :return: None
+        """
+        my_db, my_cursor = database.connect_to_database(db_name=name)
+        self.shapes, self.points_count = database.get_pdm(my_cursor, name)
