@@ -22,10 +22,10 @@ class PDM:
         :type name: str
         """
 
-        self.mean_shape = None
-        self.shapes = None
-        self.points_count = 0
-        self.distance = None
+        self.mean_shape = None  # the mean shape (1D array)
+        self.shapes = None      # all shapes (array of 1D arrays)
+        self.points_count = 0   # number of points in a single shape
+        self.distance = None    # procrustes distance
         self.canvas = 255 * np.ones([512, 512, 3], np.uint8)
 
         self.build_model_from_images(directory, count, name)
@@ -72,7 +72,7 @@ class PDM:
                 new_shape[1::2] = new_shape[1::2] + y
 
                 # save shapes
-                self.shapes = np.append([self.shapes], [new_shape], axis=0)
+                self.shapes = np.vstack((self.shapes, new_shape))
                 print(self.shapes.shape)
                 shapes[1] = new_shape
                 new_mean = np.mean(shapes, 0)
