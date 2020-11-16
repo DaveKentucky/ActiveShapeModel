@@ -1,4 +1,6 @@
 import mysql.connector
+import numpy as np
+from pdm import PDM
 
 
 def connect_to_database(user="root", password="password1", db_name=None):
@@ -21,7 +23,6 @@ def connect_to_database(user="root", password="password1", db_name=None):
         connection = mysql.connector.connect(host="localhost", user=user, password=password, database=db_name)
 
     if connection:
-        print("Connection successful")
         return connection
     else:
         print("Failed to connect")
@@ -45,22 +46,19 @@ def create_database(user, password, db_name):
     db = connect_to_database(user, password)
     cursor = db.cursor()
 
-    if check_if_db_exists(db_name):
+    if db_exists(db_name):
         cursor.execute("use " + db_name)
     else:
         cursor.execute("create database " + db_name)
         # create tables if database was created
         create_default_tables(cursor)
 
-    # cursor.execute("show tables")
-    #
-    # for i in cursor:
-    #     print(i)
+    # create_default_tables(cursor)
 
     return db, cursor
 
 
-def check_if_db_exists(db_name):
+def db_exists(db_name):
     """
     Checks if database with given name exists
 
@@ -92,21 +90,62 @@ def create_default_tables(cursor):
     :return: None
     """
 
-    # create table of points
-    sql = "create table Points (point_id int primary key not null, image_id int, point_index int, x int, y int," \
-          "foreign key (image_id) references Images (image_id))"
-    cursor.execute(sql)
-
     # create table od models
-    sql = "create table Models (model_id int primary key not null, model_name varchar(40), points_count int)"
+    sql = "create table Models (model_id int primary key auto_increment not null," \
+          "model_name varchar(40), points_count int)"
     cursor.execute(sql)
 
     # create table od images
-    sql = "create table Images (image_id int primary key not null, model_id int, mean_model bool," \
+    sql = "create table Images (image_id int primary key auto_increment not null, model_id int, mean_model bool," \
           " foreign key (model_id) references Models(model_id))"
     cursor.execute(sql)
+
+    # create table of points
+    sql = "create table Points (point_id int primary key auto_increment not null , image_id int," \
+          "point_index int, x int, y int, foreign key (image_id) references Images (image_id))"
+    cursor.execute(sql)
+
+
+def insert_pdm(db, cursor, model: PDM, name):
+
+    # insert a model object into the table
+    model_data = (name, model.points_count)
+    sql1 = "insert into Models (model_name, points_count) values (%s, %s)"  # query for inserting a model
+    cursor.execute(sql1, model_data)
+
+    # get added model's id
+    model_id = cursor.lastrowid
+
+    sql2 = "insert into Images (model_id, mean_model) values (%s, %s)"  # query for inserting a shape
+    sql3 = "insert into Points (image_id, point_index, x, y) values (%s, %s, %s, %s)"   # query for inserting a point
+
+    # insert all shapes objects of the model into the table
+    for i, image in enumerate(model.shapes):
+        # first shape in an array should always be the mean shape
+        if i == 0:
+            mean = 1
+        else:
+            mean = 0
+        cursor.execute(sql2, (model_id, mean))
+
+        # get added shape's id
+        last_id = cursor.lastrowid
+
+        # insert all points objects of the shape into the table
+        shape = model.shapes[i]
+        print(shape)
+        for j in range(model.points_count):
+            x = int(shape[2 * j])
+            y = int(shape[2 * j + 1])
+
+            cursor.execute(sql3, (last_id, j, x, y))
+
+    db.commit()
 
 
 if __name__ == '__main__':
 
-    create_database("root", "password1", "asm_database")
+    my_db, my_cursor = create_database("root", "password1", "asm_database")
+
+    model = PDM("Sword_images", 3, "sword")
+    insert_pdm(my_db, my_cursor, model, "sword")
