@@ -71,8 +71,11 @@ class Image:
         :type y: int
         :return: None
         """
-        # add new point to the list of landmark points
-        # and draw it on the displayed image
+
+        # check if there is no point with these coordinates added yet
+        for point in self.points:
+            if point == [x, y]:
+                return
 
         self.points.append([x, y])
 
