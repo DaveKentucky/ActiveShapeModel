@@ -70,8 +70,9 @@ class PDM:
                     new_mean = procrustes.procrustes_analysis(self.mean_shape, new_mean)
                     new_mean[::2] = new_mean[::2] + x
                     new_mean[1::2] = new_mean[1::2] + y
-                    self.mean_shape = new_mean
-                    self.distance = new_distance
+
+                self.mean_shape = new_mean
+                self.distance = new_distance
 
             self.draw_shape(list(array), color)
 
