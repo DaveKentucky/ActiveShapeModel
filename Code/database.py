@@ -121,13 +121,18 @@ def insert_pdm(db, cursor, shapes, points_count, name):
     :return: None
     """
 
-    # insert a model object into the table
-    model_data = (name, points_count)
-    sql1 = "insert into Models (model_name, points_count) values (%s, %s)"  # query for inserting a model
-    cursor.execute(sql1, model_data)
-
-    # get added model's id
-    model_id = cursor.lastrowid
+    # check if model with this name already exists
+    cursor.execute("select from Models model_id where model_name = '" + name + "'");
+    index = cursor.fetchone()
+    if index is not None:
+        model_id = index[0]
+    else:
+        # insert a model object into the table
+        model_data = (name, points_count)
+        sql1 = "insert into Models (model_name, points_count) values (%s, %s)"  # query for inserting a model
+        cursor.execute(sql1, model_data)
+        # get added model's id
+        model_id = cursor.lastrowid
 
     sql2 = "insert into Images (model_id, mean_model) values (%s, %s)"  # query for inserting a shape
     sql3 = "insert into Points (image_id, point_index, x, y) values (%s, %s, %s, %s)"   # query for inserting a point
