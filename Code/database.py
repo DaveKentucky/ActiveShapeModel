@@ -118,7 +118,8 @@ def insert_pdm(db, cursor, shapes, points_count, name):
     :type points_count: int
     :param name: name of the model
     :type name: str
-    :return: None
+    :return: Message string about added model
+    :rtype: str
     """
 
     # check if model with this name already exists
@@ -126,6 +127,7 @@ def insert_pdm(db, cursor, shapes, points_count, name):
     index = cursor.fetchone()
     if index is not None:
         model_id = index[0]
+        return_string = f"Shapes added to database to model with ID={model_id}"
     else:
         # insert a model object into the table
         model_data = (name, points_count)
@@ -133,6 +135,7 @@ def insert_pdm(db, cursor, shapes, points_count, name):
         cursor.execute(sql1, model_data)
         # get added model's id
         model_id = cursor.lastrowid
+        return_string = f"Shapes added to database to a new model with ID={model_id}"
 
     sql2 = "insert into Images (model_id, mean_model) values (%s, %s)"  # query for inserting a shape
     sql3 = "insert into Points (image_id, point_index, x, y) values (%s, %s, %s, %s)"   # query for inserting a point
@@ -159,6 +162,8 @@ def insert_pdm(db, cursor, shapes, points_count, name):
 
     db.commit()
 
+    return return_string
+
 
 def get_pdm(cursor, name):
     """
@@ -175,6 +180,7 @@ def get_pdm(cursor, name):
     cursor.execute("select model_id, points_count from models where model_name = '" + name + "'")
     result = cursor.fetchone()
     if result is None:
+        print(f"No model '{name}' found in database")
         return None
 
     model_id = result[0]
@@ -196,6 +202,7 @@ def get_pdm(cursor, name):
     cursor.execute("select image_id from images where model_id = '" + str(model_id) + "'")
     result = cursor.fetchall()
     if result is None:
+        print(f"No shapes associated with model '{name}' found in database")
         return None
 
     shape_id = tuple(x[0] for x in result)
@@ -218,6 +225,7 @@ def get_pdm(cursor, name):
                 shapes[i - 1][j * 2] = result[j][0]
                 shapes[i - 1][j * 2 + 1] = result[j][1]
 
+    print(f"Model '{name}' read from database successfully with {shapes_count} shapes")
     return mean_shape, shapes, points_count
 
 
@@ -227,6 +235,6 @@ if __name__ == '__main__':
 
     my_db, my_cursor = create_database("root", "password1", "asm_database")
 
-    model = PDM("Sword_images", 7, "sword")
-    # model.save_to_db()
+    model = PDM("Face_images", 5, "face")
+    model.save_to_db()
     get_pdm(my_cursor, "face")

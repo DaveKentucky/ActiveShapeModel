@@ -127,7 +127,7 @@ def get_gradient_image(image, method=0):
 
     :param image: original image in greyscale
     :type image: numpy.ndarray
-    :param method: 0 - Laplacian gradient, 1 - Sobel gradient
+    :param method: 0 - Laplacian gradient, 1 - Sobel gradient, 2 - Canny edges
     :type method: int
     :return: high gradient points image
     :rtype: numpy.ndarray
@@ -140,11 +140,16 @@ def get_gradient_image(image, method=0):
     if method == 0:
         gradient = cv.Laplacian(blurred, cv.CV_64F)
     elif method == 1:
-        sobel_x = cv.Sobel(blurred, cv.CV_64F, 1, 0, ksize=5)
-        sobel_y = cv.Sobel(blurred, cv.CV_64F, 0, 1, ksize=5)
-        gradient = cv.bitwise_or(sobel_x, sobel_y)
+        # Output datatype = cv.CV_64F. Then take its absolute and convert to cv.CV_8U
+        sobel_x64 = cv.Sobel(blurred, cv.CV_64F, 1, 0, ksize=5)
+        sobel_y64 = cv.Sobel(blurred, cv.CV_64F, 0, 1, ksize=5)
+        abs_sobel_x64 = np.absolute(sobel_x64)
+        abs_sobel_y64 = np.absolute(sobel_y64)
+        sobel_x8 = np.uint8(abs_sobel_x64)
+        sobel_y8 = np.uint8(abs_sobel_y64)
+        gradient = cv.bitwise_or(sobel_x64, sobel_y64)
     elif method == 2:
-        gradient = cv.Canny(blurred, 20, 30)
+        gradient = cv.Canny(blurred, 40, 90)
     else:
         return None
 
@@ -215,20 +220,21 @@ def find_new_point_position(image, x, y, search_range):
     """
 
     # check if search range is an odd value
-    if search_range % 2 != 1:
+    if search_range % 2 == 1:
+        cor = (search_range - 1) / 2
+    else:
         return None
 
     means = np.zeros((search_range, search_range), np.float)
 
-    if search_range % 2 == 1:
-        cor = (search_range - 1) / 2
-
     for i in range(search_range):
         for j in range(search_range):
-            mx = x - cor + i
-            my = y - cor + j
+            mx = int(x - cor + i)
+            my = int(y - cor + j)
             means[i, j] = get_surrounding_points_mean(image, mx, my, 5)
 
+    # get absolute values of the gradients
+    # means = np.absolute(means)
     # find indices of the greatest mean
     index = [np.amax(np.argmax(means, axis=0)), np.amax(np.argmax(means, axis=1))]
 
@@ -240,10 +246,16 @@ def find_new_point_position(image, x, y, search_range):
 def fit_model(image, model, search_range, gradient_method=0):
 
     original_model = model
+
     # convert image to greyscale
-    grey_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    if len(image.shape) == 3:
+        grey_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    else:
+        grey_image = image
+
     # set initial location of the model
     new_shape = set_initial_location(image, original_model)
+
     # get gradient image for searching
     search_image = get_gradient_image(grey_image, gradient_method)
 
@@ -274,9 +286,14 @@ def fit_model(image, model, search_range, gradient_method=0):
 if __name__ == '__main__':
 
     mdl = np.array([130, 150, 150, 210, 240, 350, 330, 210, 350, 150])
-    img = cv.imread('Data/Face_images/face3.jpg')
+    img = cv.imread('Data/Face_images/face1.jpg')
 
-    fit_model(img, mdl, 33, gradient_method=0)
+    # img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    # grad = get_gradient_image(img, method=0)
+    # cv.imshow("gradient", img)
+    # cv.waitKey(20000)
+
+    # fit_model(img, mdl, 11, gradient_method=0)
 
     # close all open windows
     cv.destroyAllWindows()

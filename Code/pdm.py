@@ -92,7 +92,10 @@ class PDM:
                 self.mean_shape = new_mean
                 self.distance = new_distance
 
-            self.draw_shape(list(array), color)
+                self.draw_shape(list(array), color)
+
+                index = len(self.shapes)
+                print(f"New image added to the model successfully\nImage index: {index}")
 
     def get_mean_shape(self):
         """
@@ -159,13 +162,17 @@ class PDM:
         self.draw_shape(shape, 0)
         cv.imwrite(filename, self.canvas)
 
+        print(f"Mean shape saved to file: {filename}\nAll shapes saved to file all_shapes.jpg")
+
     def save_to_db(self):
         """
         Saves model into database
         """
 
         my_db, my_cursor = database.create_database()
-        database.insert_pdm(my_db, my_cursor, self.shapes, self.points_count, self.name)
+        result_message = database.insert_pdm(my_db, my_cursor, self.shapes, self.points_count, self.name)
+        if result_message is not None:
+            print(result_message)
 
     def build_from_images(self, directory, count, name):
         """

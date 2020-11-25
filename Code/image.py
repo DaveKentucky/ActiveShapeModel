@@ -80,7 +80,7 @@ class Image:
 
         self.points.append([x, y])
 
-        print(self.points[len(self.points) - 1])
+        # print(str(len(self.points)) + str(self.points[len(self.points) - 1]))
 
     def get_landmark_point(self, coords, i=-1):
         """
@@ -151,7 +151,7 @@ class Image:
             x = point[0]
             y = point[1]
             cv.rectangle(display_image, (x - 1, y - 1), (x + 1, y + 1), (200, 0, 0), -1)
-            cv.putText(display_image, str(index), (x + 1, y - 1), cv.FONT_HERSHEY_PLAIN, 1.0, (200, 0, 0))
+            # cv.putText(display_image, str(index), (x + 1, y - 1), cv.FONT_HERSHEY_PLAIN, 1.0, (200, 0, 0))
 
         return display_image
 
