@@ -17,7 +17,7 @@ def connect_to_database(user="root", password="password1", db_name=None):
     """
 
     if db_name is None:
-        connection = mysql.connector.connect(host="localhost", user=user, password=password)
+        connection = mysql.connector.connect(host="localhost", user=user, password=password, database="asm_database")
     else:
         connection = mysql.connector.connect(host="localhost", user=user, password=password, database=db_name)
 
@@ -122,7 +122,7 @@ def insert_pdm(db, cursor, shapes, points_count, name):
     """
 
     # check if model with this name already exists
-    cursor.execute("select from Models model_id where model_name = '" + name + "'");
+    cursor.execute("select model_id from Models where model_name = '" + name + "'");
     index = cursor.fetchone()
     if index is not None:
         model_id = index[0]
@@ -168,7 +168,7 @@ def get_pdm(cursor, name):
     :param name: name of the model
     :type name: str
     :return: array of all shapes, total count of points in a single shape
-    :rtype: (numpy.ndarray, int)
+    :rtype: (numpy.ndarray, numpy.ndarray, int)
     """
 
     # get model's id
@@ -189,7 +189,8 @@ def get_pdm(cursor, name):
     shapes_count = result[0]
 
     # prepare array for points
-    shapes = np.zeros((shapes_count, 2 * points_count), int)
+    shapes = np.zeros((shapes_count - 1, 2 * points_count), int)
+    mean_shape = np.zeros((1, 2 * points_count), int)
 
     # get id of each shape saved in the model
     cursor.execute("select image_id from images where model_id = '" + str(model_id) + "'")
@@ -204,13 +205,20 @@ def get_pdm(cursor, name):
         cursor.execute("select x, y from points where image_id = " + str(id))
         result = cursor.fetchall()
 
-        # save coordinates in array
-        for j, point in enumerate(result):
-            shapes[i][j * 2] = result[j][0]
-            shapes[i][j * 2 + 1] = result[j][1]
+        cursor.execute("select mean_model from images where image_id = " + str(id))
+        is_mean = cursor.fetchone()
+        if is_mean[0] == 1:
+            # save coordinates in mean shape array
+            for j, point in enumerate(result):
+                mean_shape[0, j * 2] = result[j][0]
+                mean_shape[0, j * 2 + 1] = result[j][1]
+        else:
+            # save coordinates in array
+            for j, point in enumerate(result):
+                shapes[i - 1][j * 2] = result[j][0]
+                shapes[i - 1][j * 2 + 1] = result[j][1]
 
-    print(shapes)
-    return shapes, points_count
+    return mean_shape, shapes, points_count
 
 
 if __name__ == '__main__':
@@ -219,6 +227,6 @@ if __name__ == '__main__':
 
     my_db, my_cursor = create_database("root", "password1", "asm_database")
 
-    # model = PDM("Sword_images", 3, "sword")
+    model = PDM("Sword_images", 7, "sword")
     # model.save_to_db()
-    get_pdm(my_cursor, "swords")
+    get_pdm(my_cursor, "face")

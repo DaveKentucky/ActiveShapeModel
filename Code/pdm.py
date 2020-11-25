@@ -30,7 +30,8 @@ class PDM:
         self.distance = None    # procrustes distance
         self.canvas = 255 * np.ones([512, 512, 3], np.uint8)
 
-        self.build_from_images(directory, count, name)
+        if not self.read_from_db(self.name):
+            self.build_from_images(directory, count, name)
 
     def add_shape(self, shape, color):
         """
@@ -217,7 +218,13 @@ class PDM:
 
         :param name: name of the model
         :type name: str
-        :return: None
+        :return: if the model was read from database
+        :rtype: bool
         """
-        my_db, my_cursor = database.connect_to_database(db_name=name)
-        self.shapes, self.points_count = database.get_pdm(my_cursor, name)
+        my_db, my_cursor = database.connect_to_database()
+        db_read = database.get_pdm(my_cursor, name)
+        if db_read is not None:
+            self.mean_shape, self.shapes, self.points_count = db_read
+            return True
+        else:
+            return False

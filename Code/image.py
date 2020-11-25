@@ -56,6 +56,7 @@ class Image:
         new_w = int(w * ratio)
         new_h = int(h * ratio)
         image = cv.resize(grey_image, (new_w, new_h))
+        self.__image = cv.resize(self.__image, (new_w, new_h))
 
         self.height = image.shape[0]
         self.width = image.shape[1]
@@ -144,7 +145,7 @@ class Image:
         """
         # get image with notified landmark points on it
 
-        display_image = self.image.copy()
+        display_image = self.__image.copy()
         for point in self.points:
             index = self.points.index(point) + 1
             x = point[0]

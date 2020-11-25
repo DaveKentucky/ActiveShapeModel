@@ -61,12 +61,6 @@ def set_model_position(selected_box, model_box, model):
     return np.int32(aligned_model)
 
 
-def asm_search(image, model):
-
-    new_model = set_initial_location(image, model)
-    find_new_point_position(image, new_model[0], new_model[1])
-
-
 def set_initial_location(image, model):
     """
     Sets the initial location of the model on the image to area marked by the user
@@ -149,6 +143,8 @@ def get_gradient_image(image, method=0):
         sobel_x = cv.Sobel(blurred, cv.CV_64F, 1, 0, ksize=5)
         sobel_y = cv.Sobel(blurred, cv.CV_64F, 0, 1, ksize=5)
         gradient = cv.bitwise_or(sobel_x, sobel_y)
+    elif method == 2:
+        gradient = cv.Canny(blurred, 20, 30)
     else:
         return None
 
@@ -251,22 +247,36 @@ def fit_model(image, model, search_range, gradient_method=0):
     # get gradient image for searching
     search_image = get_gradient_image(grey_image, gradient_method)
 
-    # iterate each point in the model
-    for i, (x, y) in enumerate(zip(new_shape[0::2], new_shape[1::2])):
-        new_x, new_y = find_new_point_position(search_image, x, y, search_range)
-        new_shape[2 * i] = new_x
-        new_shape[2 * i + 1] = new_y
+    points = np.array(new_shape)
+    points = points.reshape(-1, 2)
+    for point in points:
+        x = point[0]
+        y = point[1]
+        cv.rectangle(image, (x - 1, y - 1), (x + 1, y + 1), (0, 255, 0), -1)
+
+    for k in range(20):
+        # iterate each point in the model
+        for i, (x, y) in enumerate(zip(new_shape[0::2], new_shape[1::2])):
+            new_x, new_y = find_new_point_position(search_image, x, y, search_range)
+            new_shape[2 * i] = new_x
+            new_shape[2 * i + 1] = new_y
+
+    points = np.array(new_shape)
+    points = points.reshape(-1, 2)
+    for point in points:
+        x = point[0]
+        y = point[1]
+        cv.rectangle(image, (x - 1, y - 1), (x + 1, y + 1), (0, 0, 255), -1)
+    cv.imshow("image", image)
+    cv.waitKey(10000)
 
 
 if __name__ == '__main__':
 
     mdl = np.array([130, 150, 150, 210, 240, 350, 330, 210, 350, 150])
-    img = cv.imread('Code/Data/Face_images/face1.jpg')
+    img = cv.imread('Data/Face_images/face3.jpg')
 
-    fit_model(img, mdl, 33)
-
-    # if img is not None:
-    #     asm_search(img, mdl)
+    fit_model(img, mdl, 33, gradient_method=0)
 
     # close all open windows
     cv.destroyAllWindows()
