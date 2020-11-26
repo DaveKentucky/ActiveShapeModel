@@ -3,29 +3,39 @@ import numpy as np
 
 class ShapeVector:
 
-    # 2D array of points
+    # vector of points
     vector: np.array
+    # number of points in vector
+    n_points: int
 
     def __init__(self, p):
 
-        self.vector = p.copy()
+        self.n_points = len(p[0])
+        array = np.zeros([2 * self.n_points], np.int)
+        for i, point in enumerate(p.T):
+            array[2 * i] = point[0]
+            array[2 * i + 1] = point[1]
+
+        self.vector = array
 
     def get_points_count(self):
-        return self.vector.shape[1]
+        return len(self.vector) / 2
 
     def get_point(self, i):
-        return self.vector[:, i]
+        return self.vector[2 * i], self.vector[2 * i + 1]
 
     def get_x_mean(self):
-        return int(np.mean(self.vector[0, :]))
+        return int(np.mean(self.vector[0::2]))
 
     def get_y_mean(self):
-        return int(np.mean(self.vector[1, :]))
+        return int(np.mean(self.vector[1::2]))
 
     def translate(self, vx, vy):
 
-        self.vector[0] += vx
-        self.vector[1] += vy
+        for i in range(self.n_points):
+            self.vector[2 * i] += vx
+        for i in range(self.n_points):
+            self.vector[2 * i + 1] += vy
 
     def move_to_origin(self):
         self.translate(-self.get_x_mean(), -self.get_y_mean())
