@@ -32,6 +32,8 @@ class ModelImage:
     def __init__(self):
 
         self.is_loaded = False
+        self.shape_info = ShapeInfo()
+        self.shape_vector = ShapeVector()
 
     def read_from_file(self, directory, file):
         """
@@ -43,7 +45,6 @@ class ModelImage:
         :type file: str
         :return: None
         """
-
         if not self.is_loaded:
             path = directory + "/" + file
             image = cv.imread(path)
@@ -52,14 +53,19 @@ class ModelImage:
 
             self.image = image
             self.name = file.split('.')[0]
-            print(self.name)
             self.is_loaded = True
 
-    def mark_points(self, p):
+    def set_points_from_array(self, p):
+        """
+        Sets landmark points array with given array of points
 
+        :param p: 2D numpy array of points
+        :type p: numpy.ndarray
+        :return: None
+        """
         self.n_points = len(p[0])
         self.points = p.copy()
-        self.shape_vector = ShapeVector(p)
+        self.shape_vector.set_from_points_array(p)
 
     def show(self, show):
         """
@@ -70,7 +76,6 @@ class ModelImage:
         :return: image copy with model shapes
         :rtype: numpy.ndarray
         """
-
         if len(self.image.shape) == 1:
             img = cv.cvtColor(self.image, cv.COLOR_GRAY2RGB)
         else:
