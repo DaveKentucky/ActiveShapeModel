@@ -59,11 +59,11 @@ class ModelImage:
         """
         Sets landmark points array with given array of points
 
-        :param p: 2D numpy array of points
+        :param p: numpy array of points (Nx2 shape)
         :type p: numpy.ndarray
         :return: None
         """
-        self.n_points = len(p[0])
+        self.n_points = p.shape[0]
         self.points = p.copy()
         self.shape_vector.set_from_points_array(p)
 

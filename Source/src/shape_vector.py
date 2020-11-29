@@ -19,12 +19,13 @@ class ShapeVector:
     def set_from_points_array(self, p):
         """
         Sets vector with array of points
-        :param p: 2D numpy array of points
+
+        :param p: numpy array of points (Nx2 shape)
         :type p: numpy.ndarray
         """
-        self.n_points = len(p[0])
+        self.n_points = p.shape[0]
         array = np.zeros([2 * self.n_points], np.float)
-        for i, point in enumerate(p.T):
+        for i, point in enumerate(p):
             array[2 * i] = point[0]
             array[2 * i + 1] = point[1]
 
@@ -33,16 +34,18 @@ class ShapeVector:
     def set_from_vector(self, v):
         """
         Sets vector with copy of given vector
+
         :param v: vector of points
-        :type v: numpy.nddarray
+        :type v: numpy.ndarray
         :return: None
         """
-        self.n_points = len(v) / 2
+        self.n_points = int(len(v) / 2)
         self.vector = v.copy()
 
     def get_point(self, i):
         """
         Returns coordinates of point at given index
+
         :param i: index of the point
         :return: tuple of point coordinates (X, Y)
         :rtype: (float, float)
@@ -66,16 +69,21 @@ class ShapeVector:
     def to_points_array(self):
         """
         Returns array of points
-        :return: 2D array of points
+
+        :return: array of points (Nx2 shape)
         :rtype: numpy.ndarray
         """
-        array = np.array([self.vector[0::2], self.vector[1::2]])
+        array = np.zeros((self.n_points, 2), np.float)
+        for i in range(self.n_points):
+            array[i, 0] = self.vector[2 * i]
+            array[i, 1] = self.vector[2 * i + 1]
 
         return array
 
     def translate(self, vx, vy):
         """
         Translates the vector with given translation values
+
         :param vx: X translation
         :type vx: float
         :param vy: Y translation
@@ -90,6 +98,7 @@ class ShapeVector:
     def scale(self, s):
         """
         Scale the vector with given scale
+
         :param s: scale
         :type s: float
         :return: None
@@ -99,6 +108,7 @@ class ShapeVector:
     def scale_to_one(self):
         """
         Scale the vector to values in range [0.0, 1.0]
+
         :return: None
         """
         self.scale(1 / np.linalg.norm(self.vector, np.inf))
@@ -106,6 +116,7 @@ class ShapeVector:
     def move_to_origin(self):
         """
         Translates the vector's center to origin
+
         :return: None
         """
         self.translate(-self.get_x_mean(), -self.get_y_mean())
@@ -113,6 +124,7 @@ class ShapeVector:
     def align_to(self, ref_vec):
         """
         Aligns the vector to given vector at origin
+
         :param ref_vec: reference shape vector object
         :type ref_vec: ShapeVector
         :return: None
@@ -122,6 +134,7 @@ class ShapeVector:
     def add_vector(self, vec):
         """
         Sums the vector with given vector
+
         :param vec: component vector
         :type vec: ShapeVector
         :return: None
@@ -133,7 +146,7 @@ class ShapeVector:
 
 if __name__ == '__main__':
 
-    a = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])
+    a = np.array([[1, 6], [2, 7], [3, 8], [4, 9], [5, 10]])
     sv = ShapeVector()
     sv.set_from_points_array(a)
     print(f"points count: {sv.n_points}\n")
