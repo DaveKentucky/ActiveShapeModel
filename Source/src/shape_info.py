@@ -7,10 +7,10 @@ class ShapeInfo:
     # dataclass of single point information
     @dataclass
     class PointInfo:
-        contour: int
-        type: int
-        connect_from: int
-        connect_to: int
+        contour: int        # index of contour (contour_start_index)
+        type: int           # closed (1) or open (0)
+        connect_from: int   # index of previous point
+        connect_to: int     # index of next point
 
     # index of the first point in contour in the landmark points array
     contour_start_index: list
@@ -22,7 +22,7 @@ class ShapeInfo:
     n_contours: int
 
     # list of info for every point in shape
-    point_info: list()
+    point_info: list
 
     def draw_points_on_image(self, image, points, draw_directly):
 

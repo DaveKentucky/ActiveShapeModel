@@ -34,7 +34,7 @@ class ShapeModel:
     pca_shape: np.ndarray
 
     # eigenvectors of the model
-    eigenvalues: np.ndarray
+    eigenvectors: np.ndarray
 
     def read_train_data(self, directory, model_name):
 
@@ -91,7 +91,7 @@ class ShapeModel:
             for j in range(length):
                 pca_data[j, i] = self.training_images[i].shape_vector[j]
 
-        self.pca_shape, self.eigenvalues = cv.PCACompute(pca_data, mean=None)
+        self.pca_shape, self.eigenvectors = cv.PCACompute(pca_data, mean=None)
 
     def build_model(self):
 
@@ -102,4 +102,4 @@ class ShapeModel:
 if __name__ == '__main__':
 
     sm = ShapeModel()
-    sm.read_train_data('E:/Szkolne/Praca_inzynierska/ActiveShapeModel/Source/data/Face_images')
+    sm.read_train_data('E:/Szkolne/Praca_inzynierska/ActiveShapeModel/Source/data/Face_images', 'face')
