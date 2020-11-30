@@ -85,7 +85,7 @@ class ShapeModel:
 
     def build_PCA(self):
 
-        length = self.training_images[0].shape_vector.vector.shape[0]
+        length = self.training_images[0].shape_vector.vector.points[0]
         pca_data = np.empty((length, self.n_images), np.float)
         for i in range(self.n_images):
             for j in range(length):

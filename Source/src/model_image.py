@@ -76,7 +76,7 @@ class ModelImage:
         :return: image copy with model shapes
         :rtype: numpy.ndarray
         """
-        if len(self.image.shape) == 1:
+        if len(self.image.points) == 1:
             img = cv.cvtColor(self.image, cv.COLOR_GRAY2RGB)
         else:
             img = self.image.copy()
