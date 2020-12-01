@@ -16,7 +16,7 @@ def make_window_read_data():
     # layout of the left column with directories and files
     files_column = [
         [
-            sg.Text("Select directory containing training data for the model"),
+            sg.Text("Select directory containing training data for the model")
         ],
         [
             sg.Text("Folder"),
@@ -53,7 +53,7 @@ def make_window_read_data():
         ]
     ]
 
-    return sg.Window("Choose training data", layout, finalize=True)
+    return sg.Window("Choose training data", layout, element_justification="c", finalize=True)
 
 
 def make_window_mark_landmarks():
@@ -65,21 +65,23 @@ def make_window_mark_landmarks():
     """
     layout = [
         [
+            sg.T(' ' * 13),
             sg.Text("Click on image to mark a landmark point")
         ],
         [
-            sg.Button("Delete", enable_events=True, key="-DELETE BUTTON-"),
+            sg.Button("Delete", enable_events=True, key="-DELETE BUTTON-", size=(10, 1)),
             sg.Text("Delete last landmark point marked")
         ],
         [
-            sg.Button("End contour", enable_events=True, key="-END CONTOUR BUTTON-"),
+            sg.Button("End contour", enable_events=True, key="-END CONTOUR BUTTON-", size=(10, 1)),
             sg.Text("End marking current contour")
         ],
         [
-            sg.Button("Change type", enable_events=True, key="-TYPE BUTTON-"),
+            sg.Button("Change type", enable_events=True, key="-TYPE BUTTON-", size=(10, 1)),
             sg.Text("Change type of current contour into opposite")
         ],
         [
+            sg.T(' ' * 35),
             sg.Button("Submit", enable_events=True, key="-SUBMIT BUTTON-")
         ],
     ]
@@ -206,6 +208,7 @@ def select_training_data_files():
 
 def create_shape_model():
 
+    sg.theme("Dark Grey 13")
     shape_model = select_training_data_files()
     if shape_model is not None:     # successfully created shape model
         for image in shape_model.training_images:   # loop through every training image
@@ -219,4 +222,4 @@ def create_shape_model():
 
 
 if __name__ == '__main__':
-    pass
+    create_shape_model()
