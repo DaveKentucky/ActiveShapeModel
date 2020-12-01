@@ -28,8 +28,53 @@ class ShapeInfo:
     def __init__(self):
         self.n_contours = 0
 
-    def draw_points_on_image(self, image, points, draw_directly):
+    def create_from_shape(self, points, start_indices, types):
+        """
+        Creates ShapeInfo object from lists describing shape
+        :param points: list of points
+        :type points: list[int, int]
+        :param start_indices: list of start indices of every contour
+        :type start_indices: list[int]
+        :param types: list of types of every contour
+        :type types: list[int]
+        :return: None
+        """
+        self.n_contours = len(start_indices)
+        self.contour_start_index = start_indices.copy()
+        self.contour_is_closed = types.copy()
+        self.point_info = list()
 
+        for i, contour_start in enumerate(self.contour_start_index):
+            for j, point in enumerate(points):
+                if j < self.contour_start_index[i + 1]:   # every point in this contour
+                    if j == contour_start:  # first point in contour
+                        if self.contour_is_closed[i] == 1:  # first point in closed contour
+                            c_from = self.contour_start_index[i + 1] - 1
+                        else:   # first point in open contour
+                            c_from = j
+                    else:   # connect to previous point otherwise
+                        c_from = j - 1
+                    if j == self.contour_start_index[i + 1] - 1:    # last point in contour
+                        if self.contour_is_closed[i] == 1:  # last point in closed contour
+                            c_to = contour_start
+                        else:   # last point in open contour
+                            c_to = j
+
+                    p_info = PointInfo(i, self.contour_is_closed[i], c_from, c_to)
+                    self.point_info.append(p_info)
+
+    def draw_points_on_image(self, image, points, draw_directly):
+        """
+        Puts points and contour lines on given image
+        :param image: canvas to draw points on
+        :type image: numpy.ndarray
+        :param points: array of points (Nx2 shape)
+        :type points: numpy.ndarray
+        :param draw_directly: if points should be drawn on this image or its copy
+        :type draw_directly: bool
+        :return: image with drawn points and contours
+        :rtype: numpy.ndarray
+        """
         if draw_directly:
             img = image
         else:
@@ -44,28 +89,3 @@ class ShapeInfo:
                     cv.line(img, points[self.point_info[j].connect_from], point, (50, 100, 200), 1)
 
         return img
-
-    def add_contour(self, start_id, is_closed):
-        self.contour_start_index.append(start_id)   # set index of first point in this contour
-        self.contour_is_closed.append(is_closed)    # set if this contour is closed or open
-        self.n_contours += 1
-        self.add_point_info(True)
-
-    def add_point_info(self, start, contour_id=None):
-        if contour_id is None:  # on default add to the last contour
-            contour_id = len(self.contour_start_index) - 1
-        is_closed = self.contour_is_closed[contour_id]  # check if contour is closed or open
-        if start:   # it is the first point in this contour
-            p_info = PointInfo(contour_id, is_closed, len(self.point_info), len(self.point_info))
-        else:       # it is another point in this contour
-            p_info = PointInfo(contour_id, is_closed, len(self.point_info) - 1, len(self.point_info))
-        self.point_info.append(p_info)
-
-    def delete_last_point_info(self):
-        last_id = len(self.point_info) - 1
-        self.point_info.pop()
-        if last_id in self.contour_start_index:     # deleted point was first in a contour
-            self.contour_start_index.pop()
-            self.contour_is_closed.pop()
-        else:   # deleted point was part of a contour
-            self.point_info[-1].connect_to = last_id - 1

@@ -70,6 +70,12 @@ class Database:
               "model_id int, foreign key (model_id) references models(model_id) on delete cascade)"
         self.cursor.execute(sql)
 
+        # create table of point_infos
+        sql = "create table point_info (point_info_id int primary key auto_increment not null," \
+              "shape_info_id int, point_index int not null, shape_index int, shape_type int, previous int, next int," \
+              "foreign key (shape_info_id) references shape_info(shape_info_id) on delete cascade)"
+        self.cursor.execute(sql)
+
         # create table od images
         sql = "create table images (image_id int primary key auto_increment not null, model_id int," \
               "image_name varchar(40), points_count int," \

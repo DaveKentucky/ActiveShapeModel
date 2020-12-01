@@ -14,8 +14,11 @@ class ShapeCreator:
     # if currently marked contour is closed or open
     current_is_closed: int
 
-    # index of first point in currently marked contour
-    start_index: int
+    # index of first point in every contour
+    contour_start: list
+
+    # type of every contour
+    contour_type: list
 
     # index of last point in previously marked contour
     end_index: None
@@ -26,21 +29,24 @@ class ShapeCreator:
     def __init__(self, img: np.ndarray):
 
         self.image = img.copy()
-        self.info = ShapeInfo()
+        self.contour_start = list()
+        self.contour_type = list()
 
     def add_point(self, x, y):
         self.points.append(np.array([x, y]))    # add point coordinates to list
 
-        if self.info.n_contours == 0:   # it is the first contour in this shape
-            self.info.add_contour(0, self.current_is_closed)
-            self.current_contour_index = 0
-            self.start_index = 0
-        if len(self.points) - 1 == self.start_index:    # it is start point of a new contour
-            self.info.add_point_info(True)
-        else:   # it is another point in this contour
-            self.info.add_point_info(False)
+        if len(self.contour_start) == 0:
+            self.start_contour(0)
 
     def delete_point(self):
         self.points.pop()
 
-        self.info.delete_last_point_info()
+    def start_contour(self, start_index):
+        self.contour_start.append(start_index)              # add first index of new contour
+        self.contour_type.append(self.current_is_closed)    # add type of the contour
+        contour = len(self.contour_start) - 1
+        self.current_contour_index = contour
+
+    def create_shape_info(self):
+        self.info = ShapeInfo()
+        self.info.create_from_shape(self.points, self.contour_start, self.contour_type)
