@@ -31,6 +31,7 @@ class ShapeInfo:
     def create_from_shape(self, points, start_indices, types):
         """
         Creates ShapeInfo object from lists describing shape
+
         :param points: list of points
         :type points: list[int, int]
         :param start_indices: list of start indices of every contour
@@ -66,6 +67,7 @@ class ShapeInfo:
     def draw_points_on_image(self, image, points, draw_directly):
         """
         Puts points and contour lines on given image
+
         :param image: canvas to draw points on
         :type image: numpy.ndarray
         :param points: array of points (Nx2 shape)

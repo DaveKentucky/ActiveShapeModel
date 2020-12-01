@@ -9,6 +9,7 @@ import cv2 as cv
 def make_window_read_data():
     """
     Creates window with functionality of reading data for model
+
     :return: window reading data for model from file
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
@@ -28,8 +29,11 @@ def make_window_read_data():
             )
         ],
         [
-            sg.Button("Select this directory", enable_events=True, key="-SELECT BUTTON-"),
+            sg.Text("Model's name:"),
             sg.In(size=(15, 1), enable_events=False, key="-MODEL NAME-"),
+        ],
+        [
+            sg.Button("Select this directory", enable_events=True, key="-SELECT BUTTON-"),
         ]
     ]
 
@@ -55,14 +59,29 @@ def make_window_read_data():
 def make_window_mark_landmarks():
     """
     Creates window layout with instructions about marking landmark points on image
+
     :return: window with instructions about marking landmark points
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
     layout = [
-        [sg.Text("Click on image to mark a landmark point")],
-        [sg.Text("Drag and drop marked point to replace it")],
-        [sg.Text("Press R to delete last landmark point marked")],
-        [sg.Text("Press N to mark new shape")],
+        [
+            sg.Text("Click on image to mark a landmark point")
+        ],
+        [
+            sg.Text("Drag and drop marked point to replace it")
+        ],
+        [
+            sg.Button("Delete", enable_events=True, key="-DELETE BUTTON-"),
+            sg.Text("Delete last landmark point marked")
+        ],
+        [
+            sg.Button("End contour", enable_events=True, key="-END CONTOUR BUTTON-"),
+            sg.Text("End marking current contour")
+        ],
+        [
+            sg.Button("Change type", enable_events=True, key="-TYPE BUTTON-"),
+            sg.Text("Change type of current contour into opposite")
+        ],
     ]
 
     return sg.Window("Manual", layout, finalize=True)
@@ -88,6 +107,8 @@ def cv_mouse_click(event, x, y, flags, creator):
 
         creator.add_point(x, y)
 
+    cv.imshow(creator.window_name, creator.get_display_image())
+
     # if event == cv.EVENT_LBUTTONUP:
     #     if g_index == -1:
     #         img.add_landmark_point(x, y)
@@ -100,15 +121,31 @@ def cv_mouse_click(event, x, y, flags, creator):
     #         img.set_landmark_point([x, y], g_index)
     #         cv.imshow("Image", img.get_display_image())
 
-    cv.imshow("Image", creator.image)
-
 
 def mark_landmark_points(m_img):
     window = make_window_mark_landmarks()
     if m_img.is_loaded:
-        cv.imshow(f"{m_img.name}", m_img.image)
-        creator = ShapeCreator()
-    cv.setMouseCallback(f"{m_img.name}", cv_mouse_click, creator)
+        win_name = m_img.name
+        creator = ShapeCreator(m_img.image, win_name)
+        cv.imshow(win_name, creator.get_display_image())
+        cv.setMouseCallback(win_name, cv_mouse_click, creator)
+    else:
+        print(f"Failed to read model image: {m_img.name}\nMake sure the image is loaded")
+        return None
+
+    while True and cv.getWindowProperty(win_name, cv.WND_PROP_VISIBLE) >= 1:
+        cv.imshow(creator.window_name, creator.get_display_image())
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-DELETE BUTTON-":
+            creator.delete_point()
+        elif event == "-END CONTOUR BUTTON-":
+            creator.end_contour()
+        elif event == "-TYPE BUTTON-":
+            creator.flip_contour_type()
+
+    window.close()
     # TODO: implement OpenCV event loop in separate thread
 
 
@@ -120,7 +157,7 @@ def select_training_data_files():
         event, values = window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
-        if event == "-FOLDER-":     # folder name was filled in
+        elif event == "-FOLDER-":     # folder name was filled in
             folder = values["-FOLDER-"]
             try:
                 # Get list of files in folder
@@ -164,4 +201,5 @@ def select_training_data_files():
 
 
 if __name__ == '__main__':
-    select_training_data_files()
+    m = select_training_data_files()
+    mark_landmark_points(m.training_images[0])

@@ -97,6 +97,7 @@ class Database:
     def insert_model(self, shape_model: ShapeModel):
         """
         Inserts ShapeModel object into database
+
         :param shape_model: ShapeModel object
         :type shape_model: ShapeModel
         :return: ID of the inserted model in database
@@ -111,6 +112,7 @@ class Database:
     def insert_shape_info(self, shape_info: ShapeInfo, model_id):
         """
         Inserts ShapeInfo object into database
+
         :param shape_info: ShapeInfo object
         :type shape_info: ShapeInfo
         :param model_id: corresponding model ID
@@ -130,6 +132,7 @@ class Database:
     def insert_contour(self, shape_info: ShapeInfo, shape_info_id, contour_index):
         """
         Inserts contour data into database
+
         :param shape_info: ShapeInfo object
         :type shape_info: ShapeInfo
         :param shape_info_id: ID of corresponding ShapeInfo object in database
