@@ -68,9 +68,6 @@ def make_window_mark_landmarks():
             sg.Text("Click on image to mark a landmark point")
         ],
         [
-            sg.Text("Drag and drop marked point to replace it")
-        ],
-        [
             sg.Button("Delete", enable_events=True, key="-DELETE BUTTON-"),
             sg.Text("Delete last landmark point marked")
         ],
@@ -111,18 +108,6 @@ def cv_mouse_click(event, x, y, flags, creator):
         creator.add_point(x, y)
 
     cv.imshow(creator.window_name, creator.get_display_image())
-
-    # if event == cv.EVENT_LBUTTONUP:
-    #     if g_index == -1:
-    #         img.add_landmark_point(x, y)
-    #     else:
-    #         img.set_landmark_point([x, y], g_index)
-    #         g_index = -1
-
-    # if event == cv.EVENT_MOUSEMOVE:
-    #     if g_index != -1:
-    #         img.set_landmark_point([x, y], g_index)
-    #         cv.imshow("Image", img.get_display_image())
 
 
 def mark_landmark_points(m_img):
@@ -219,10 +204,19 @@ def select_training_data_files():
     return model
 
 
+def create_shape_model():
+
+    shape_model = select_training_data_files()
+    if shape_model is not None:     # successfully created shape model
+        for image in shape_model.training_images:   # loop through every training image
+            creator = mark_landmark_points(image)
+            if creator is not None:     # received not None creator
+                if len(creator.points) > 0:     # creator's point list is not empty
+                    if shape_model.shape_info is None:      # there is no shape info set yet
+                        info = creator.create_shape_info()  # create new shape info based on created shape
+                        shape_model.set_shape_info(info)       # set model's shape info
+                    image.points = creator.points.copy()    # set image points array with marked points
+
+
 if __name__ == '__main__':
-    m = select_training_data_files()
-    if m is not None:
-        c = mark_landmark_points(m.training_images[0])
-        if c is not None:
-            print(c)
-            print(c.create_shape_info())
+    pass

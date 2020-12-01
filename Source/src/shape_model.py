@@ -36,6 +36,15 @@ class ShapeModel:
     # eigenvectors of the model
     eigenvectors: np.ndarray
 
+    def set_shape_info(self, info):
+
+        if self.shape_info is None:     # set shape info if it was not set before
+            self.shape_info = info
+            for image in self.training_images:
+                image.shape_info = info
+                if image.points is not None:    # clear previously saved points if any
+                    image.points = None
+
     def read_train_data(self, directory, model_name):
 
         self.directory = directory
@@ -68,7 +77,7 @@ class ShapeModel:
             current_mean = ShapeVector()
             current_mean.set_from_vector(new_mean.vector)
             new_mean = ShapeVector()
-            new_mean.set_from_vector(np.zeros(current_mean.shape, np.float))
+            new_mean.set_from_vector(np.zeros(current_mean.vector.shape, np.float))
 
             for image in self.training_images:
                 image.shape_vector.align_to(new_mean)

@@ -67,6 +67,14 @@ class ModelImage:
         self.points = p.copy()
         self.shape_vector.set_from_points_array(p)
 
+    def set_points_from_list(self, l):
+
+        self.n_points = len(l)
+        self.points = np.zeros([self.n_points, 2], int)
+        for i, point in enumerate(l):
+            self.points[i] = point.copy()
+        self.shape_vector.set_from_points_array(self.points)
+
     def show(self, show):
         """
         Returns copy of the image with marked model shapes on it
@@ -76,7 +84,7 @@ class ModelImage:
         :return: image copy with model shapes
         :rtype: numpy.ndarray
         """
-        if len(self.image.points) == 1:
+        if len(self.image.shape) == 1:
             img = cv.cvtColor(self.image, cv.COLOR_GRAY2RGB)
         else:
             img = self.image.copy()
