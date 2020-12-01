@@ -28,6 +28,9 @@ class ShapeInfo:
     def __init__(self):
         self.n_contours = 0
 
+    def __repr__(self):
+        return f"ShapeInfo: {self.n_contours} contours, start indexes: {self.contour_start_index}"
+
     def create_from_shape(self, points, start_indices, types):
         """
         Creates ShapeInfo object from lists describing shape
@@ -47,19 +50,22 @@ class ShapeInfo:
 
         for i, contour_start in enumerate(self.contour_start_index):
             for j, point in enumerate(points):
-                if j < self.contour_start_index[i + 1]:   # every point in this contour
+                max_index = self.contour_start_index[i + 1] if i + 1 < len(self.contour_start_index) else len(points)
+                if contour_start <= j < max_index:   # every point in this contour
                     if j == contour_start:  # first point in contour
                         if self.contour_is_closed[i] == 1:  # first point in closed contour
-                            c_from = self.contour_start_index[i + 1] - 1
+                            c_from = max_index - 1
                         else:   # first point in open contour
                             c_from = j
                     else:   # connect to previous point otherwise
                         c_from = j - 1
-                    if j == self.contour_start_index[i + 1] - 1:    # last point in contour
+                    if j == max_index - 1:    # last point in contour
                         if self.contour_is_closed[i] == 1:  # last point in closed contour
                             c_to = contour_start
                         else:   # last point in open contour
                             c_to = j
+                    else:   # connect to next point otherwise
+                        c_to = j + 1
 
                     p_info = PointInfo(i, self.contour_is_closed[i], c_from, c_to)
                     self.point_info.append(p_info)

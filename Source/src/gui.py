@@ -1,4 +1,4 @@
-from shape_model import ShapeModel
+from shape_model import ShapeModel, ModelImage
 from shape_creator import ShapeCreator
 
 import PySimpleGUI as sg
@@ -82,6 +82,9 @@ def make_window_mark_landmarks():
             sg.Button("Change type", enable_events=True, key="-TYPE BUTTON-"),
             sg.Text("Change type of current contour into opposite")
         ],
+        [
+            sg.Button("Submit", enable_events=True, key="-SUBMIT BUTTON-")
+        ],
     ]
 
     return sg.Window("Manual", layout, finalize=True)
@@ -123,6 +126,14 @@ def cv_mouse_click(event, x, y, flags, creator):
 
 
 def mark_landmark_points(m_img):
+    """
+    Creates and operates window where user can draw a shape on image
+
+    :param m_img: ModelImage object with image loaded
+    :type m_img: ModelImage
+    :return: creator object with data about marked points and possibility of creating ShapeInfo object
+    :rtype: ShapeCreator
+    """
     window = make_window_mark_landmarks()
     if m_img.is_loaded:
         win_name = m_img.name
@@ -144,12 +155,22 @@ def mark_landmark_points(m_img):
             creator.end_contour()
         elif event == "-TYPE BUTTON-":
             creator.flip_contour_type()
+        elif event == "-SUBMIT BUTTON-":
+            answer = sg.popup_yes_no("Are you sure you want to submit this shape?")
+            if answer == 'Yes':
+                break
 
     window.close()
-    # TODO: implement OpenCV event loop in separate thread
+    return creator
 
 
 def select_training_data_files():
+    """
+    Creates and operates window where user can select directory with training data for a new model
+
+    :return: ShapeModel object with set training images
+    :rtype: ShapeModel
+    """
     window = make_window_read_data()
     model = None
 
@@ -192,8 +213,6 @@ def select_training_data_files():
                 model = ShapeModel()
                 model_name = values["-MODEL NAME-"]
                 model.read_train_data(folder, model_name)
-                for img in model.training_images:
-                    print(img.name)
                 break
 
     window.close()
@@ -202,4 +221,8 @@ def select_training_data_files():
 
 if __name__ == '__main__':
     m = select_training_data_files()
-    mark_landmark_points(m.training_images[0])
+    if m is not None:
+        c = mark_landmark_points(m.training_images[0])
+        if c is not None:
+            print(c)
+            print(c.create_shape_info())

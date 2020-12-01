@@ -40,6 +40,15 @@ class ShapeCreator:
         self.contour_type = list()
         self.end_index = -1
 
+    def __repr__(self):
+
+        string = "points:\n"
+        for point in self.points:
+            string += str(point) + "\n"
+
+        return f"ShapeCreator: image: {self.window_name},\n" \
+               f"{len(self.points)} points and {len(self.contour_start)} contours marked,\n" + string
+
     def get_display_image(self):
 
         # draw marked points on image
@@ -148,3 +157,5 @@ class ShapeCreator:
         """
         self.info = ShapeInfo()
         self.info.create_from_shape(self.points, self.contour_start, self.contour_type)
+
+        return self.info
