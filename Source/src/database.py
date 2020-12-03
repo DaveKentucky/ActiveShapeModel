@@ -117,7 +117,7 @@ class Database:
                 "create table models ("
                 "model_id int primary key auto_increment not null,"
                 "model_name varchar(40),"
-                "points_count int)",
+                ")",
             "shape_info":
                 "create table shape_info ("
                 "shape_info_id int primary key auto_increment not null,"
@@ -179,8 +179,8 @@ class Database:
         :return: ID of the inserted model in database
         :rtype: int
         """
-        query = "insert into models (model_name, points_count) values (%s, %s)"
-        data = (shape_model.name_tag, shape_model.n_landmarks)
+        query = "insert into models (model_name) values (%s)"
+        data = (shape_model.name_tag,)
         self.cursor.execute(query, data)
         self.db.commit()
 
