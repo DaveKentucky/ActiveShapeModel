@@ -174,7 +174,6 @@ class Database:
         """
         Inserts ShapeModel object into database
 
-        :param shape_model: ShapeModel object
         :type shape_model: ShapeModel
         :return: ID of the inserted model in database
         :rtype: int
@@ -190,9 +189,8 @@ class Database:
         """
         Inserts ShapeInfo object into database
 
-        :param shape_info: ShapeInfo object
         :type shape_info: ShapeInfo
-        :param model_id: corresponding model ID
+        :param model_id: ID of corresponding Model object in database
         :type model_id: int
         :return: ID of the inserted ShapeInfo object in database
         :rtype: int

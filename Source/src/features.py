@@ -22,15 +22,22 @@ class FeatureExtractor:
     # amount of points in each direction on the normal to the shape bounding
     points_per_direction: int
 
-    def __init__(self, shape_info, points_per_direction):
+    # amount of points in each direction on the normal to the shape bounding while searching for new points
+    search_points_per_direction: int
+
+    def __init__(self, shape_info, points_per_direction, search_points_per_direction):
         """
 
         :type shape_info: ShapeInfo
         :param points_per_direction: amount of points searched along the normal to the shape on each side
         :type points_per_direction: int
+        :param search_points_per_direction: amount of points searched along the normal to the shape on each side while
+        searching for new points
+        :type search_points_per_direction: int
         """
         self.shape_info = shape_info
         self.points_per_direction = points_per_direction
+        self.search_points_per_direction = search_points_per_direction
         self.grayscale_pyramid = list()
         self.laplacian_pyramid = list()
 
@@ -114,7 +121,8 @@ class FeatureExtractor:
 
         return direction
 
-    def get_center(self, loop_range, prev_x, prev_y, direction):
+    @staticmethod
+    def get_center(loop_range, prev_x, prev_y, direction):
 
         j = 1
         for i in range(loop_range):
@@ -149,7 +157,7 @@ class FeatureExtractor:
         :rtype: numpy.ndarray
         """
         direction = self.get_normal_direction(points, point_id)
-        ppd = self.points_per_direction
+        ppd = self.points_per_direction + 1
 
         nx, ny, j = self.get_center(abs(offset), 0, 0, direction)
 
@@ -202,7 +210,7 @@ class FeatureExtractor:
         step = 1.3 * math.sqrt((x_max - x_min) * (y_max - y_min) / 10000.)
 
         points_on_normal = self.get_points_on_normal(points, point_id, level, step)
-        ppd = self.points_per_direction
+        ppd = self.points_per_direction + 1
         array = np.zeros([2 * ppd + 1, 1])
 
         abs_sum = 0
@@ -217,6 +225,40 @@ class FeatureExtractor:
 
         return array
 
+    def get_candidates_with_feature(self, points, point_id, level):
+        """
+        Find candidates for new points in a search
+
+        :param points: numpy array of points (Nx2 shape)
+        :type points: numpy.ndarray
+        :param point_id: index of the point in which the normal vector should be calculated
+        :type point_id: int
+        :param level: analysed level of the gaussian pyramid of the image
+        :type level: int
+        :return: vector of found candidate points and vector of features
+        :rtype: (list, list)
+        """
+        candidate_points = list()
+        features = list()
+
+        img = self.laplacian_pyramid[level]
+        sppd = self.search_points_per_direction + 1
+        ppd = self.points_per_direction + 1
+
+        for i in range(sppd, -sppd, -1):
+            points_on_normal = self.get_points_on_normal(points, point_id, level, 1, i)
+
+            normals_vector = np.zeros([2 * self.points_per_direction + 1, 1])
+            abs_sum = 0
+            for j in range(-ppd, ppd, 1):
+                normals_vector[j + ppd, 0] = img[points_on_normal[j + ppd]]
+                abs_sum += math.fabs(normals_vector[j + ppd, 0])
+
+            normals_vector = normals_vector / abs_sum
+            candidate_points.append(points_on_normal[ppd])
+            features.append(normals_vector)
+
+        return candidate_points, features
 
 if __name__ == '__main__':
     pass
