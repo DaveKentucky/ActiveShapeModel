@@ -36,6 +36,24 @@ class ShapeModel:
     # eigenvectors of the model
     eigenvectors: np.ndarray
 
+    # level of the image pyramid constant
+    pyramid_level = 3
+
+    def build_PCA(self):
+
+        length = self.training_images[0].shape_vector.vector.points[0]
+        pca_data = np.empty((length, self.n_images), np.float)
+        for i in range(self.n_images):
+            for j in range(length):
+                pca_data[j, i] = self.training_images[i].shape_vector[j]
+
+        self.pca_shape, self.eigenvectors = cv.PCACompute(pca_data, mean=None)
+
+    def build_model(self):
+
+        self.align_all_shapes()
+        self.build_PCA()
+
     def set_shape_info(self, info):
 
         if self.shape_info is None:     # set shape info if it was not set before
@@ -91,21 +109,6 @@ class ShapeModel:
                 break
 
         self.mean_shape = current_mean
-
-    def build_PCA(self):
-
-        length = self.training_images[0].shape_vector.vector.points[0]
-        pca_data = np.empty((length, self.n_images), np.float)
-        for i in range(self.n_images):
-            for j in range(length):
-                pca_data[j, i] = self.training_images[i].shape_vector[j]
-
-        self.pca_shape, self.eigenvectors = cv.PCACompute(pca_data, mean=None)
-
-    def build_model(self):
-
-        self.align_all_shapes()
-        self.build_PCA()
 
 
 if __name__ == '__main__':

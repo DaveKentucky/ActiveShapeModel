@@ -7,6 +7,9 @@ import math
 
 class FeatureExtractor:
 
+    # number of levels of the pyramid
+    levels: int
+
     # gaussian pyramid of the image
     gaussian_pyramid: list
 
@@ -25,21 +28,26 @@ class FeatureExtractor:
     # amount of points in each direction on the normal to the shape bounding while searching for new points
     search_points_per_direction: int
 
-    def __init__(self, shape_info, points_per_direction, search_points_per_direction):
+    def __init__(self, levels, points_per_direction, search_points_per_direction, shape_info=None):
         """
 
-        :type shape_info: ShapeInfo
+        :param levels: number of levels of the pyramid
+        :type levels: int
         :param points_per_direction: amount of points searched along the normal to the shape on each side
         :type points_per_direction: int
         :param search_points_per_direction: amount of points searched along the normal to the shape on each side while
         searching for new points
         :type search_points_per_direction: int
+        :type shape_info: ShapeInfo
         """
-        self.shape_info = shape_info
+        self.levels = levels
         self.points_per_direction = points_per_direction
         self.search_points_per_direction = search_points_per_direction
         self.grayscale_pyramid = list()
         self.laplacian_pyramid = list()
+
+        if shape_info is not None:
+            self.shape_info = shape_info
 
     def load_image(self, img):
         """
@@ -54,7 +62,7 @@ class FeatureExtractor:
         self.gaussian_pyramid = [layer]
 
         # build layers of gaussian pyramid
-        for i in range(3):
+        for i in range(self.levels):
             layer = cv.pyrDown(layer)
             self.gaussian_pyramid.append(layer)
             # cv.imshow(str(i), layer)
@@ -66,13 +74,13 @@ class FeatureExtractor:
             layer = img.copy()
 
         # build layers of grayscale gaussian pyramid
-        for i in range(3):
+        for i in range(self.levels):
             layer = cv.pyrDown(layer)
             self.grayscale_pyramid.append(layer)
             # cv.imshow(str(i), layer)
 
         # build layers of laplacian pyramid
-        for i in range(1, 3, 1):
+        for i in range(1, self.levels, 1):
             gaussian = self.gaussian_pyramid[i]
 
             # create higher layer of gaussian pyramid layer
@@ -168,6 +176,7 @@ class FeatureExtractor:
             offset_x = -nx
             offset_y = -ny
 
+        direction *= step
         nx, ny, j = self.get_center(ppd, 0, 0, direction)
         prev_x = nx
         prev_y = ny
@@ -259,6 +268,7 @@ class FeatureExtractor:
             features.append(normals_vector)
 
         return candidate_points, features
+
 
 if __name__ == '__main__':
     pass
