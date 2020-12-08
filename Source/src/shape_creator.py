@@ -30,8 +30,13 @@ class ShapeCreator:
     # ShapeInfo object of the model image
     info: ShapeInfo
 
-    def __init__(self, img: np.ndarray, window_name: str):
+    def __init__(self, img, window_name):
+        """
 
+        :param img: image
+        :type img: numpy.ndarray
+        :type window_name: str
+        """
         self.image = img.copy()
         self.window_name = window_name
         self.points = list()

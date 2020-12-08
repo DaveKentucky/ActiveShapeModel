@@ -87,7 +87,7 @@ class ShapeModel:
             new_mean.align_to(origin)
             new_mean.scale_to_one()
 
-            if np.linalg.norm(np.subtract(current_mean.vector, new_mean.vector), np.inf) < 0.001:
+            if np.linalg.norm(np.subtract(current_mean.vector, new_mean.vector), np.inf) < 1e-10:
                 break
 
         self.mean_shape = current_mean
