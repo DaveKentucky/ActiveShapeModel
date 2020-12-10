@@ -1,4 +1,5 @@
-from shape_model import ShapeModel, ModelImage
+from asm_model import ASMModel
+from shape_model import ModelImage
 from shape_creator import ShapeCreator
 
 import PySimpleGUI as sg
@@ -58,13 +59,17 @@ def make_window_read_data():
     return sg.Window("Choose training data", layout, element_justification="c", finalize=True)
 
 
-def make_window_mark_landmarks():
+def make_window_mark_landmarks(points):
     """
     Creates window layout with instructions about marking landmark points on image
 
     :return: window with instructions about marking landmark points
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
+    if points < 0:
+        txt = ""
+    else:
+        txt = "Points to mark: " + str(points)
     layout = [
         [
             sg.T(' ' * 13),
@@ -81,6 +86,9 @@ def make_window_mark_landmarks():
         [
             sg.Button("Change type", enable_events=True, key="-TYPE BUTTON-", size=(10, 1)),
             sg.Text("Change type of current contour into opposite")
+        ],
+        [
+            sg.Text(txt)
         ],
         [
             sg.T(' ' * 35),
@@ -123,7 +131,11 @@ def mark_landmark_points(m_img):
     :return: creator object with data about marked points and possibility of creating ShapeInfo object
     :rtype: ShapeCreator
     """
-    window = make_window_mark_landmarks()
+    n_points = -1
+    if m_img.shape_info is not None:
+        n_points = len(m_img.shape_info.point_info)
+
+    window = make_window_mark_landmarks(n_points)
     if m_img.is_loaded:
         win_name = m_img.name
         creator = ShapeCreator(m_img.image, win_name)
@@ -145,11 +157,15 @@ def mark_landmark_points(m_img):
         elif event == "-TYPE BUTTON-":
             creator.flip_contour_type()
         elif event == "-SUBMIT BUTTON-":
-            answer = sg.popup_yes_no("Are you sure you want to submit this shape?")
-            if answer == 'Yes':
-                break
+            if 0 < n_points != len(creator.points):
+                sg.PopupOK(f"Number of marked points is incorrect!\nYou have to mark {n_points} points!")
+            else:
+                answer = sg.popup_yes_no("Are you sure you want to submit this shape?")
+                if answer == 'Yes':
+                    break
 
     window.close()
+    cv.destroyWindow(creator.window_name)
     return creator
 
 
@@ -157,11 +173,12 @@ def select_training_data_files():
     """
     Creates and operates window where user can select directory with training data for a new model
 
-    :return: ShapeModel object with set training images
-    :rtype: ShapeModel
+    :return: ASMModel object with set training images
+    :rtype: ASMModel
     """
     window = make_window_read_data()
     model = None
+    files = None
 
     while True:
         event, values = window.read()
@@ -181,7 +198,7 @@ def select_training_data_files():
             files = [
                 f
                 for f in file_list
-                if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith((".jpg", ".png"))
+                if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith((".jpg", ".png", ".bmp"))
             ]
             window["-FILE LIST-"].update(files)
         elif event == "-FILE LIST-":  # file was chosen from the listbox
@@ -194,14 +211,18 @@ def select_training_data_files():
             except OSError:
                 print("No element selected")
         elif event == "-SELECT BUTTON-":
-            if len(values["-MODEL NAME-"]) <= 0:
+            if files is None:
+                sg.PopupOK("Select correct folder with data!")
+            elif len(files) <= 0:
+                sg.PopupOK("Select correct folder with data!")
+            elif len(values["-MODEL NAME-"]) <= 0:
                 sg.PopupOK("Type in model name!")
             else:
                 folder = values["-FOLDER-"]
                 folder = folder.replace("\\", "/")
-                model = ShapeModel()
+                model = ASMModel()
                 model_name = values["-MODEL NAME-"]
-                model.read_train_data(folder, model_name)
+                model.read_train_data(folder, model_name, files)
                 break
 
     window.close()

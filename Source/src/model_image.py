@@ -32,7 +32,8 @@ class ModelImage:
     def __init__(self):
 
         self.is_loaded = False
-        self.shape_info = ShapeInfo()
+        self.shape_info = None
+        self.points = None
         self.shape_vector = ShapeVector()
 
     def read_from_file(self, directory, file):
@@ -49,7 +50,7 @@ class ModelImage:
             path = directory + "/" + file
             image = cv.imread(path)
             if image is None:
-                sys.exit("Failed to load the image")
+                sys.exit("ModelImage: Failed to load the image")
 
             self.image = image
             self.name = file.split('.')[0]

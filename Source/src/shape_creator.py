@@ -58,8 +58,9 @@ class ShapeCreator:
 
         # draw marked points on image
         img = self.image.copy()
-        for point in self.points:
+        for i, point in enumerate(self.points):
             cv.circle(img, (point[0], point[1]), 3, (0, 0, 220), -1)
+            cv.putText(img, str(i + 1), (point[0] + 2, point[1] - 2), cv.QT_FONT_BLACK, 0.7, (0, 0, 220))
 
         for i, first in enumerate(self.contour_start):    # loop every contour
             for j, point in enumerate(self.points):     # loop every point

@@ -30,6 +30,7 @@ class ASMModel(ShapeModel):
 
     def __init__(self, points_on_normal=4, search_points_on_normal=6):
 
+        super().__init__()
         self.points_on_normal = points_on_normal
         self.search_points_on_normal = search_points_on_normal
         self.feature_extractor = FeatureExtractor(self.pyramid_level,
@@ -70,6 +71,8 @@ class ASMModel(ShapeModel):
                 cov_matrix = np.linalg.inv(cov_matrix)
                 self.cov_mat_pyr_inv[i].append(cov_matrix)
                 self.mean_vec_pyr[i].append(mean)
+
+        feature_extractor_list.clear()
 
 
 if __name__ == '__main__':

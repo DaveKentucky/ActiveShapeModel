@@ -39,6 +39,11 @@ class ShapeModel:
     # level of the image pyramid constant
     pyramid_level = 3
 
+    def __init__(self):
+
+        self.shape_info = None
+        self.mean_shape = None
+
     def build_PCA(self):
 
         length = self.training_images[0].shape_vector.vector.points[0]
@@ -63,7 +68,7 @@ class ShapeModel:
                 if image.points is not None:    # clear previously saved points if any
                     image.points = None
 
-    def read_train_data(self, directory, model_name):
+    def read_train_data(self, directory, model_name, files):
 
         self.directory = directory
         self.name_tag = model_name
@@ -71,7 +76,7 @@ class ShapeModel:
         self.training_images = list()
 
         # read all files from target directory
-        for filename in os.listdir(directory):
+        for filename in files:
             img = ModelImage()
             img.read_from_file(directory, filename)
             if img.is_loaded:

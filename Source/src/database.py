@@ -1,4 +1,4 @@
-from shape_model import ShapeModel
+from asm_model import ASMModel
 from shape_info import ShapeInfo
 from model_image import ModelImage
 
@@ -117,6 +117,8 @@ class Database:
                 "create table models ("
                 "model_id int primary key auto_increment not null,"
                 "model_name varchar(40),"
+                "pts_on_normal int,"
+                "search_pts_on_normal int"
                 ")",
             "shape_info":
                 "create table shape_info ("
@@ -170,16 +172,16 @@ class Database:
             else:
                 print("OK")
 
-    def insert_model(self, shape_model: ShapeModel):
+    def insert_model(self, asm_model: ASMModel):
         """
-        Inserts ShapeModel object into database
+        Inserts ASMModel object into database
 
-        :type shape_model: ShapeModel
+        :type asm_model: ASMModel
         :return: ID of the inserted model in database
         :rtype: int
         """
-        query = "insert into models (model_name) values (%s)"
-        data = (shape_model.name_tag,)
+        query = "insert into models (model_name, pts_on_normal, search_pts_on_normal) values (%s, %s, %s)"
+        data = (asm_model.name_tag, asm_model.points_on_normal, asm_model.search_points_on_normal)
         self.cursor.execute(query, data)
         self.db.commit()
 
