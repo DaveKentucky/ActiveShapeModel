@@ -24,6 +24,8 @@ def create_model():
                     image.set_points_from_list(creator.points)    # set image points array with marked points
                     my_db.insert_image(image, m_id)
 
+        model.build_model()
+
 
 if __name__ == '__main__':
 

@@ -54,7 +54,7 @@ class ModelImage:
                 sys.exit("ModelImage: Failed to load the image")
 
             self.image = image
-            self.name = file.split('.')[0]
+            self.name = file
             self.is_loaded = True
 
     def set_points_from_array(self, p):
