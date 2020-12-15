@@ -122,12 +122,14 @@ def cv_mouse_click(event, x, y, flags, creator):
     cv.imshow(creator.window_name, creator.get_display_image())
 
 
-def mark_landmark_points(m_img):
+def mark_landmark_points(m_img, h_img):
     """
     Creates and operates window where user can draw a shape on image
 
     :param m_img: ModelImage object with image loaded
     :type m_img: ModelImage
+    :param h_img: ModelImage with already marked points for a pattern
+    :type h_img: ModelImage
     :return: creator object with data about marked points and possibility of creating ShapeInfo object
     :rtype: ShapeCreator
     """
@@ -144,6 +146,8 @@ def mark_landmark_points(m_img):
     else:
         print(f"Failed to read model image: {m_img.name}\nMake sure the image is loaded")
         return None
+    if h_img is not None:
+        cv.imshow("Help image", h_img.show(False))
 
     while True and cv.getWindowProperty(win_name, cv.WND_PROP_VISIBLE) >= 1:
         cv.imshow(creator.window_name, creator.get_display_image())
