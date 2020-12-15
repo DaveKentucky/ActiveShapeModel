@@ -1,5 +1,5 @@
 from asm_model import ASMModel
-from shape_info import ShapeInfo
+from shape_info import ShapeInfo, PointInfo
 from model_image import ModelImage
 
 import mysql.connector
@@ -117,6 +117,7 @@ class Database:
                 "create table models ("
                 "model_id int primary key auto_increment not null,"
                 "model_name varchar(40),"
+                "directory varchar(100),"
                 "pts_on_normal int,"
                 "search_pts_on_normal int"
                 ")",
@@ -171,7 +172,7 @@ class Database:
             else:
                 print("OK")
 
-    def insert_model(self, asm_model: ASMModel):
+    def insert_model(self, asm_model):
         """
         Inserts ASMModel object into database
 
@@ -179,9 +180,10 @@ class Database:
         :return: ID of the inserted model in database
         :rtype: int
         """
-        query = "insert into models (model_name, pts_on_normal, search_pts_on_normal) values (%s, %s, %s)"
-        data = (asm_model.name_tag, asm_model.points_on_normal, asm_model.search_points_on_normal)
-        self.cursor.execute(query, data)
+        query = "insert into models (model_name, directory, pts_on_normal, search_pts_on_normal)" \
+                "values (%s, %s, %s, %s)"
+        data = (asm_model.name_tag, asm_model.directory, asm_model.points_on_normal, asm_model.search_points_on_normal)
+        self.cursor.execute(query, data)    # insert model object
         self.db.commit()
 
         return self.cursor.lastrowid
@@ -197,15 +199,15 @@ class Database:
         :rtype: int
         """
         query = "insert into shape_info (model_id) values (%s)"
-        self.cursor.execute(query, (model_id, ))
+        self.cursor.execute(query, (model_id, ))    # insert ShapeInfo object
 
         shape_info_id = self.cursor.lastrowid
-        for i in range(shape_info.n_contours):
+        for i in range(shape_info.n_contours):  # insert contours
             is_closed = shape_info.contour_is_closed[i]
             start_id = shape_info.contour_start_index[i]
             self.insert_contour(shape_info_id, is_closed, start_id)
 
-        for i, point in enumerate(shape_info.point_info):
+        for i, point in enumerate(shape_info.point_info):   # insert points info
             self.insert_point_info(shape_info_id, i, point.contour, point.type, point.connect_from, point.connect_to)
 
         self.db.commit()
@@ -228,7 +230,7 @@ class Database:
         """
         query = "insert into contours (shape_info_id, is_closed, start_point_index) values (%s, %s, %s)"
         data = (shape_info_id, contour_is_closed, contour_start_id)
-        self.cursor.execute(query, data)
+        self.cursor.execute(query, data)    # insert contour
 
         self.db.commit()
 
@@ -256,7 +258,7 @@ class Database:
         query = "insert into point_info (shape_info_id, point_index, contour_id, contour_type, previous, next)" \
                 "values (%s, %s, %s, %s, %s, %s)"
         data = (shape_info_id, point_id, contour_id, contour_type, connect_from, connect_to)
-        self.cursor.execute(query, data)
+        self.cursor.execute(query, data)    # insert PointInfo object
 
         self.db.commit()
 
@@ -275,10 +277,10 @@ class Database:
 
         query = "insert into images (model_id, image_name, points_count) values (%s, %s, %s)"
         data = (model_id, image.name, image.n_points)
-        self.cursor.execute(query, data)
+        self.cursor.execute(query, data)    # insert ModelImage object
 
         image_id = self.cursor.lastrowid
-        for i, point in enumerate(image.points):
+        for i, point in enumerate(image.points):    # insert points
             self.insert_point(point[0], point[1], i, image_id)
 
         self.db.commit()
@@ -304,13 +306,115 @@ class Database:
 
         query = "insert into points (image_id, x, y, point_index) values (%s, %s, %s, %s)"
         data = (image_id, int(x), int(y), point_index)
-        self.cursor.execute(query, data)
+        self.cursor.execute(query, data)    # insert point
 
         self.db.commit()
 
         return self.cursor.lastrowid
 
-    # def insert_pdm(db, cursor, shapes, points_count, name):
+    def read_model(self, model_name):
+        """
+        Reads ASM model from database
+
+        :param model_name: name of the model
+        :type model_name: str
+        :return: ID of the read model in database
+        :rtype: int
+        """
+        # read model
+        query = f"select * from models where model_name = '{model_name}'"
+        self.cursor.execute(query)  # read model with given name
+        result = self.cursor.fetchone()
+        if result is not None:  # model with given name found
+            print(f"Model {model_name} found in the database! Reading data...")
+            model = ASMModel(result[3], result[4])  # create model
+            directory = result[2]
+            mdl_id = result[0]
+        else:
+            print(f"Model {model_name} not found in the database")
+            return
+
+        # read images
+        image_ids, image_files = self.read_into_lists('image_id', 'image_name', 'images', 'model_id', mdl_id)
+        model.read_train_data(directory, model_name, image_files)  # read training images from files
+        print("Images read")
+
+        # read shape info
+        query = f"select shape_info_id from shape_info where model_id = {mdl_id}"
+        self.cursor.execute(query)  # read shape info of the model
+        result = self.cursor.fetchone()
+        if result is not None:
+            shape_info = ShapeInfo()
+            si_id = result[0]
+
+            # read contours
+            start_indices, types = \
+                self.read_into_lists('start_point_index', 'is_closed', 'contours', 'shape_info_id', si_id)
+            shape_info.contour_start_index = start_indices
+            shape_info.contour_is_closed = types
+
+            # read points info
+            query = f"select point_index, contour_id, contour_type, previous, next from point_info " \
+                    f"where shape_info_id = {si_id}"
+            self.cursor.execute(query)  # read point info for given shape info
+            result = self.cursor.fetchall()
+            pi_dict = {}
+            for r in result:    # store all results in a dictionary
+                pi = PointInfo(r[1], r[2], r[3], r[4])
+                pi_dict[r[0]] = pi
+            for key in sorted(pi_dict.keys()):  # sort the dictionary by point info index and save points info in a list
+                shape_info.point_info.append(pi_dict[key])
+            print("ShapeInfo read")
+        else:
+            print(f"No ShapeInfo stored for the model {model_name}")
+
+        # read points
+        for i, img_id in enumerate(image_ids):    # read points for every image
+            query = f"select point_index, x, y from points where image_id = {img_id}"
+            self.cursor.execute(query)  # read points for given image
+            result = self.cursor.fetchall()
+            pts_dict = {}
+            pts = []
+            for r in result:    # store all results in a dictionary
+                pts_dict[str(r[0])] = np.array([r[1], r[0]])
+            for key in sorted(pts_dict.keys()):     # sort the dictionary by point index and save points in a list
+                pts.append(pts_dict[key])
+            mi = model.training_images[i]   # get ModelImage object
+            mi.set_points_from_list(pts)    # set image points with values from database
+        print("Points read")
+        print("Model read")
+
+        return mdl_id
+
+    def read_into_lists(self, col1, col2, table, key_name, key_value):
+        """
+        Reads two columns from database and stores the values in lists
+
+        :param col1: name of the first column
+        :type col1: str
+        :param col2: name of the second column
+        :type col2: str
+        :param table: name of the table
+        :type table: str
+        :param key_name: name of the search key
+        :type key_name: str
+        :param key_value: value of the search key
+        :type key_value: str
+        :return: Lists with read values
+        :rtype: (list, list)
+        """
+        query = f"select {col1}, {col2} from {table} where {key_name} = {key_value}"
+        self.cursor.execute(query)  # read contour of the shape info
+        result = self.cursor.fetchall()
+        list1 = []
+        list2 = []
+        for r in result:  # create lists of information about contours
+            list1.append(r[0])
+            list2.append(r[1])
+
+        return list1, list2
+
+        # def insert_pdm(db, cursor, shapes, points_count, name):
     #     """
     #     Inserts a model into database
     #
@@ -435,6 +539,6 @@ class Database:
 
 
 if __name__ == '__main__':
-    from pdm import PDM
 
     my_db = Database()
+    my_db.read_model("hand")
