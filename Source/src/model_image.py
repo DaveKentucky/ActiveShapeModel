@@ -32,6 +32,7 @@ class ModelImage:
     def __init__(self):
 
         self.is_loaded = False
+        self.n_points = 0
         self.shape_info = None
         self.points = None
         self.shape_vector = ShapeVector()
@@ -68,12 +69,19 @@ class ModelImage:
         self.points = p.copy()
         self.shape_vector.set_from_points_array(p)
 
-    def set_points_from_list(self, l):
+    def set_points_from_list(self, lst):
+        """
+        Sets landmark points array with given list of points
 
-        self.n_points = len(l)
+        :param lst: list of numpy arrays of points
+        :type lst: list
+        :return: None
+        """
+        self.n_points = len(lst)
         self.points = np.zeros([self.n_points, 2], int)
-        for i, point in enumerate(l):
-            self.points[i] = point.copy()
+        for i, point in enumerate(lst):
+            self.points[i, 0] = point[0]
+            self.points[i, 1] = point[1]
         self.shape_vector.set_from_points_array(self.points)
 
     def show(self, show):
@@ -90,7 +98,8 @@ class ModelImage:
         else:
             img = self.image.copy()
 
-        # TODO: Draw shapes on the image
+        if self.shape_info is not None:
+            img = self.shape_info.draw_points_on_image(img, self.points, False)
 
         if show:
             cv.imshow("Image", img)
