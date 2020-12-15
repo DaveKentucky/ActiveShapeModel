@@ -44,6 +44,7 @@ class ShapeCreator:
         self.contour_start = list()
         self.contour_type = list()
         self.end_index = -1
+        self.info = ShapeInfo()
 
     def __repr__(self):
 
@@ -56,45 +57,10 @@ class ShapeCreator:
 
     def get_display_image(self):
 
-        # draw marked points on image
-        img = self.image.copy()
-        for i, point in enumerate(self.points):
-            cv.circle(img, (point[0], point[1]), 3, (0, 0, 220), -1)
-            cv.putText(img, str(i + 1), (point[0] + 2, point[1] - 2), cv.QT_FONT_BLACK, 0.7, (0, 0, 220))
+        self.info.create_from_shape(self.points, self.contour_start, self.contour_type)
+        image = self.info.draw_points_on_image(self.image, np.array(self.points), False)
 
-        for i, first in enumerate(self.contour_start):    # loop every contour
-            for j, point in enumerate(self.points):     # loop every point
-                if i + 1 < len(self.contour_start):    # it is NOT the last contour
-                    if first <= j:  # point index is larger than first in this contour
-                        if j < self.contour_start[i + 1]:   # point index is smaller than first in next contour
-                            if j == first:  # first point in contour
-                                draw_line = False
-                            else:   # NOT first point in contour
-                                draw_line = True
-                        else:   # point DOES NOT belong to current contour
-                            draw_line = False
-                    else:     # point index is smaller than first in this contour
-                        draw_line = False
-                else:   # it is the last contour
-                    if first <= j:  # point index is larger than first in this contour
-                        if j == first:  # first point in contour
-                            draw_line = False
-                        else:   # NOT first point in contour
-                            draw_line = True
-                    else:  # point index is smaller than first in this contour
-                        draw_line = False
-                if draw_line:   # draw line for every point except first points in every shape
-                    cv.line(img, tuple(self.points[j - 1]), tuple(point), (200, 100, 50), 1)
-
-            if i + 1 < len(self.contour_start):     # it is NOT the last contour
-                if self.contour_type[i] == 1:   # it is a closed contour
-                    cv.line(img, tuple(self.points[first]), tuple(self.points[self.contour_start[i + 1] - 1]),
-                            (200, 100, 50), 1)
-            else:
-                if self.contour_type[i] == 1:   # it is a closed contour
-                    cv.line(img, tuple(self.points[first]), tuple(self.points[-1]), (200, 100, 50), 1)
-
-        return img
+        return image
 
     def add_point(self, x, y):
         """
@@ -161,7 +127,5 @@ class ShapeCreator:
 
         :return: None
         """
-        self.info = ShapeInfo()
         self.info.create_from_shape(self.points, self.contour_start, self.contour_type)
-
         return self.info

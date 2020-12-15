@@ -88,12 +88,41 @@ class ShapeInfo:
         else:
             img = image.copy()
 
-        for point in points:
+        # draw marked points on image
+        for i, point in enumerate(points):
             cv.circle(img, (point[0], point[1]), 3, (0, 0, 220), -1)
+            cv.putText(img, str(i + 1), (point[0] + 2, point[1] - 2), cv.QT_FONT_BLACK, 0.7, (0, 0, 220))
 
-        for i in range(self.n_contours):
-            for j, point in enumerate(points):
-                if j < self.contour_start_index[i + 1]:
-                    cv.line(img, points[self.point_info[j].connect_from], point, (50, 100, 200), 1)
+        for i, first in enumerate(self.contour_start_index):  # loop every contour
+            for j, point in enumerate(points):  # loop every point
+                if i + 1 < len(self.contour_start_index):  # it is NOT the last contour
+                    if first <= j:  # point index is larger than first in this contour
+                        if j < self.contour_start_index[i + 1]:  # point index is smaller than first in next contour
+                            if j == first:  # first point in contour
+                                draw_line = False
+                            else:  # NOT first point in contour
+                                draw_line = True
+                        else:  # point DOES NOT belong to current contour
+                            draw_line = False
+                    else:  # point index is smaller than first in this contour
+                        draw_line = False
+                else:  # it is the last contour
+                    if first <= j:  # point index is larger than first in this contour
+                        if j == first:  # first point in contour
+                            draw_line = False
+                        else:  # NOT first point in contour
+                            draw_line = True
+                    else:  # point index is smaller than first in this contour
+                        draw_line = False
+                if draw_line:  # draw line for every point except first points in every shape
+                    cv.line(img, tuple(points[j - 1]), tuple(point), (200, 100, 50), 1)
+
+            if i + 1 < len(self.contour_start_index):  # it is NOT the last contour
+                if self.contour_is_closed[i] == 1:  # it is a closed contour
+                    cv.line(img, tuple(points[first]), tuple(points[self.contour_start_index[i + 1] - 1]),
+                            (200, 100, 50), 1)
+            else:
+                if self.contour_is_closed[i] == 1:  # it is a closed contour
+                    cv.line(img, tuple(points[first]), tuple(points[-1]), (200, 100, 50), 1)
 
         return img
