@@ -145,10 +145,9 @@ class Database:
                 "create table points ("
                 "point_id int primary key auto_increment not null,"
                 "image_id int,"
+                "point_index int,"
                 "x int,"
                 "y int,"
-                "previous_point int,"
-                "next_point int,"
                 "foreign key (image_id) references images (image_id) on delete set null)",
             "contours":
                 "create table contours ("
@@ -210,6 +209,7 @@ class Database:
             self.insert_point_info(shape_info_id, i, point.contour, point.type, point.connect_from, point.connect_to)
 
         self.db.commit()
+        print(f"Inserted ShapeInfo object with {len(shape_info.point_info)} points information")
 
         return shape_info_id
 
@@ -256,6 +256,54 @@ class Database:
         query = "insert into point_info (shape_info_id, point_index, contour_id, contour_type, previous, next)" \
                 "values (%s, %s, %s, %s, %s, %s)"
         data = (shape_info_id, point_id, contour_id, contour_type, connect_from, connect_to)
+        self.cursor.execute(query, data)
+
+        self.db.commit()
+
+        return self.cursor.lastrowid
+
+    def insert_image(self, image, model_id):
+        """
+        Inserts model image into database
+
+        :type image: ModelImage
+        :param model_id: ID of corresponding model in database
+        :type model_id: int
+        :return: ID of the inserted ModelImage object in database
+        :rtype: int
+        """
+
+        query = "insert into images (model_id, image_name, points_count) values (%s, %s, %s)"
+        data = (model_id, image.name, image.n_points)
+        self.cursor.execute(query, data)
+
+        image_id = self.cursor.lastrowid
+        for i, point in enumerate(image.points):
+            self.insert_point(point[0], point[1], i, image_id)
+
+        self.db.commit()
+        print(f"Inserted {image.name} image with {image.n_points} points")
+
+        return image_id
+
+    def insert_point(self, x, y, point_index, image_id):
+        """
+        Inserts point into database
+
+        :param x: X coordinate of the point
+        :type x: int
+        :param y: Y coordinate of the point
+        :type y: int
+        :param point_index: index of the point in array of points
+        :type point_index: int
+        :param image_id: ID of the corresponding image in database
+        :type image_id: int
+        :return: ID of the inserted point in database
+        :rtype: int
+        """
+
+        query = "insert into points (image_id, x, y, point_index) values (%s, %s, %s, %s)"
+        data = (image_id, int(x), int(y), point_index)
         self.cursor.execute(query, data)
 
         self.db.commit()
@@ -390,7 +438,3 @@ if __name__ == '__main__':
     from pdm import PDM
 
     my_db = Database()
-
-    # model = PDM("Face_images", 5, "face")
-    # model.save_to_db()
-    # get_pdm(my_cursor, "face")
