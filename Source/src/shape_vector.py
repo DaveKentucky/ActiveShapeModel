@@ -140,8 +140,8 @@ class ShapeVector:
         :return: None
         """
         if self.n_points == vec.n_points:
-            for i, c in enumerate(self.vector):
-                c += vec.vector[i]
+            for i, c in enumerate(vec.vector):
+                self.vector[i] += c
 
 
 if __name__ == '__main__':

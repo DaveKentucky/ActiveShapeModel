@@ -318,8 +318,8 @@ class Database:
 
         :param model_name: name of the model
         :type model_name: str
-        :return: ID of the read model in database
-        :rtype: int
+        :return: model read from database
+        :rtype: ASMModel
         """
         # read model
         query = f"select * from models where model_name = '{model_name}'"
@@ -362,8 +362,11 @@ class Database:
             for r in result:    # store all results in a dictionary
                 pi = PointInfo(r[1], r[2], r[3], r[4])
                 pi_dict[r[0]] = pi
+                pi_list = []
             for key in sorted(pi_dict.keys()):  # sort the dictionary by point info index and save points info in a list
-                shape_info.point_info.append(pi_dict[key])
+                pi_list.append(pi_dict[key])
+            shape_info.point_info = pi_list
+            model.set_shape_info(shape_info)
             print("ShapeInfo read")
         else:
             print(f"No ShapeInfo stored for the model {model_name}")
@@ -376,7 +379,7 @@ class Database:
             pts_dict = {}
             pts = []
             for r in result:    # store all results in a dictionary
-                pts_dict[str(r[0])] = np.array([r[1], r[0]])
+                pts_dict[(r[0])] = np.array([r[1], r[2]])
             for key in sorted(pts_dict.keys()):     # sort the dictionary by point index and save points in a list
                 pts.append(pts_dict[key])
             mi = model.training_images[i]   # get ModelImage object
@@ -384,7 +387,8 @@ class Database:
         print("Points read")
         print("Model read")
 
-        return mdl_id
+        model.build_model()
+        return model
 
     def read_into_lists(self, col1, col2, table, key_name, key_value):
         """

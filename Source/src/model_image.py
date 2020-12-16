@@ -30,7 +30,6 @@ class ModelImage:
     name: str
 
     def __init__(self):
-
         self.is_loaded = False
         self.n_points = 0
         self.shape_info = None

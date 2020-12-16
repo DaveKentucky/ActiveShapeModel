@@ -126,7 +126,7 @@ def procrustes_analysis(reference_shape, shape):
     temp_sh = temp_sh / scale
     aligned_shape = rotate(temp_sh, theta)
 
-    return np.int32(aligned_shape)
+    return aligned_shape
 
 
 def procrustes_distance(reference_shape, shape):

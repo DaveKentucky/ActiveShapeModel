@@ -36,33 +36,52 @@ class ShapeModel:
     # eigenvectors of the model
     eigenvectors: np.ndarray
 
+    # eigenvalues of the model
+    eigenvalues: np.ndarray
+
     # level of the image pyramid constant
     pyramid_level = 3
 
     def __init__(self):
-
         self.shape_info = None
         self.mean_shape = None
 
-    def build_PCA(self):
+    def __repr__(self):
+        return f"Model {self.name_tag}, training images: {self.n_images}, landmark points: {self.n_landmarks}"
 
-        length = self.training_images[0].shape_vector.vector.points[0]
+    def build_PCA(self):
+        """
+        Builds the model structure with Principal Component Analysis
+
+        :return: None
+        """
+        length = self.training_images[0].shape_vector.n_points * 2
         pca_data = np.empty((length, self.n_images), np.float)
         for i in range(self.n_images):
             for j in range(length):
-                pca_data[j, i] = self.training_images[i].shape_vector[j]
+                pca_data[j, i] = self.training_images[i].shape_vector.vector[j]
 
-        self.pca_shape, self.eigenvectors = cv.PCACompute(pca_data, mean=None)
+        self.pca_shape, self.eigenvectors, self.eigenvalues = cv.PCACompute2(pca_data, mean=None, maxComponents=10)
 
     def build_model(self):
+        """
+        Builds model structure
 
+        :return: None
+        """
         self.align_all_shapes()
         self.build_PCA()
 
     def set_shape_info(self, info):
+        """
+        Sets model's shape info object and propagates it for all the images in the model
 
+        :type info: ShapeInfo
+        :return: None
+        """
         if self.shape_info is None:     # set shape info if it was not set before
             self.shape_info = info
+            self.n_landmarks = len(info.point_info)
             for image in self.training_images:
                 image.shape_info = info
                 if image.points is not None:    # clear previously saved points if any
@@ -94,7 +113,8 @@ class ShapeModel:
         self.training_images[0].shape_vector.scale_to_one()
         new_mean = ShapeVector()
         new_mean.set_from_vector(self.training_images[0].shape_vector.vector)
-        origin = new_mean.vector.copy()     # numpy 1D array
+        origin = ShapeVector()
+        origin.set_from_vector(new_mean.vector)
 
         while True:
             current_mean = ShapeVector()
@@ -103,7 +123,7 @@ class ShapeModel:
             new_mean.set_from_vector(np.zeros(current_mean.vector.shape, np.float))
 
             for image in self.training_images:
-                image.shape_vector.align_to(new_mean)
+                image.shape_vector.align_to(current_mean)
                 new_mean.add_vector(image.shape_vector)
 
             new_mean.vector /= self.n_images
@@ -119,4 +139,3 @@ class ShapeModel:
 if __name__ == '__main__':
 
     sm = ShapeModel()
-    sm.read_train_data('E:/Szkolne/Praca_inzynierska/ActiveShapeModel/Source/data/Face_images', 'face')

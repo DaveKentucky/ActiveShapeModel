@@ -29,8 +29,9 @@ class ASMModel(ShapeModel):
     feature_extractor: FeatureExtractor
 
     def __init__(self, points_on_normal=4, search_points_on_normal=6):
-
         super().__init__()
+        self.cov_mat_pyr_inv = list()
+        self.mean_vec_pyr = list()
         self.points_on_normal = points_on_normal
         self.search_points_on_normal = search_points_on_normal
         self.feature_extractor = FeatureExtractor(self.pyramid_level,
