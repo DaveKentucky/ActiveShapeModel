@@ -30,7 +30,6 @@ class FeatureExtractor:
 
     def __init__(self, levels, points_per_direction, search_points_per_direction, shape_info=None):
         """
-
         :param levels: number of levels of the pyramid
         :type levels: int
         :param points_per_direction: amount of points searched along the normal to the shape on each side
@@ -58,6 +57,9 @@ class FeatureExtractor:
         :return: None
         """
         layer = img.copy()
+        if len(img.shape) == 3:
+            layer = cv.cvtColor(layer, cv.COLOR_BGR2GRAY)
+
         print(layer.shape)
         self.gaussian_pyramid = [layer]
 
@@ -132,6 +134,8 @@ class FeatureExtractor:
     @staticmethod
     def get_center(loop_range, prev_x, prev_y, direction):
 
+        nx = 0
+        ny = 0
         j = 1
         for i in range(loop_range):
             while True:
@@ -182,7 +186,7 @@ class FeatureExtractor:
         prev_y = ny
 
         output_points = np.zeros([2 * ppd + 1, 2], np.int)
-        for i in range(ppd, -ppd, -1):
+        for i in range(ppd, -ppd - 1, -1):
             rx = (points[point_id][0] >> level) + nx + offset_x
             ry = (points[point_id][1] >> level) + ny + offset_y
 
@@ -211,7 +215,18 @@ class FeatureExtractor:
         return output_points
 
     def get_feature(self, points, point_id, level):
+        """
+        Finds features on image pyramid for the given point
 
+        :param points: array of points
+        :type points: numpy.ndarray
+        :param point_id: index of the point in array
+        :type point_id: int
+        :param level: level of the image pyramid to be searched
+        :type level: int
+        :return: array of features
+        :rtype: numpy.ndarray
+        """
         x_min = np.min(points[:, 0])
         y_min = np.min(points[:, 1])
         x_max = np.max(points[:, 0])
@@ -223,10 +238,11 @@ class FeatureExtractor:
         array = np.zeros([2 * ppd + 1, 1])
 
         abs_sum = 0
-        for i in range(ppd, -ppd, -1):
+        for i in range(ppd, -ppd - 1, -1):
             ix = points_on_normal[i + ppd, 0]
             iy = points_on_normal[i + ppd, 1]
-            array[i + ppd, 0] = self.laplacian_pyramid[level][ix, iy]
+            tmp_laplacian = self.laplacian_pyramid[level]
+            array[i + ppd, 0] = tmp_laplacian[ix, iy]
             abs_sum += math.fabs(array[i + ppd, 0])
 
         if abs_sum != 0:

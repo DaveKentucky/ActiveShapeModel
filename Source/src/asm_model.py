@@ -68,8 +68,9 @@ class ASMModel(ShapeModel):
                         features_matrix = np.zeros([self.n_images, len(f_list)])
                     for ind, f in enumerate(f_list):
                         features_matrix[k, ind] = f
-                cov_matrix, mean = np.cov(features_matrix, bias=False)
+                cov_matrix = np.cov(features_matrix, bias=False)
                 cov_matrix = np.linalg.inv(cov_matrix)
+                mean = np.mean(features_matrix, axis=1)
                 self.cov_mat_pyr_inv[i].append(cov_matrix)
                 self.mean_vec_pyr[i].append(mean)
 
