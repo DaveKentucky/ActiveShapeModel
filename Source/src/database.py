@@ -326,7 +326,7 @@ class Database:
         self.cursor.execute(query)  # read model with given name
         result = self.cursor.fetchone()
         if result is not None:  # model with given name found
-            print(f"Model {model_name} found in the database! Reading data...")
+            print(f"\nModel {model_name} found in the database! Reading data...")
             model = ASMModel(result[3], result[4])  # create model
             directory = result[2]
             mdl_id = result[0]
@@ -335,11 +335,13 @@ class Database:
             return
 
         # read images
+        print("\nReading images...")
         image_ids, image_files = self.read_into_lists('image_id', 'image_name', 'images', 'model_id', mdl_id)
         model.read_train_data(directory, model_name, image_files)  # read training images from files
         print("Images read")
 
         # read shape info
+        print("\nReading ShapeInfo...")
         query = f"select shape_info_id from shape_info where model_id = {mdl_id}"
         self.cursor.execute(query)  # read shape info of the model
         result = self.cursor.fetchone()
@@ -372,6 +374,7 @@ class Database:
             print(f"No ShapeInfo stored for the model {model_name}")
 
         # read points
+        print("\nReading points...")
         for i, img_id in enumerate(image_ids):    # read points for every image
             query = f"select point_index, x, y from points where image_id = {img_id}"
             self.cursor.execute(query)  # read points for given image
@@ -385,7 +388,7 @@ class Database:
             mi = model.training_images[i]   # get ModelImage object
             mi.set_points_from_list(pts)    # set image points with values from database
         print("Points read")
-        print("Model read")
+        print("\nReading model from database completed!")
 
         model.build_model()
         return model

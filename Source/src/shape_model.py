@@ -10,7 +10,7 @@ from dataclasses import dataclass
 # dataclass of model fitting result
 @dataclass
 class FitResult:
-    params: list    # parameters for the model
+    params: np.ndarray    # parameters for the model
     similarity_trans: SimilarityTransformation  # transformation to recover shape after fitting
 
 
@@ -143,9 +143,24 @@ class ShapeModel:
         self.mean_shape = current_mean
 
     def project_param_to_shape(self, params_vec):
+        """
+        projects PCA params back to restore the shape and set it to given ShapeVector
+
+        :param params_vec: vector of ASM parameters
+        :type params_vec: numpy.ndarray
+        :return: vector of points (2Nx1 array)
+        :rtype numpy.ndarray
+        """
         return cv.PCABackProject(params_vec, self.pca_shape, self.eigenvectors)
 
     def project_shape_to_param(self, shape_vec):
+        """
+        projects shape vector to ASM parameters
+
+        :type shape_vec: ShapeVector
+        :return: vector of parameters
+        :rtype: numpy.ndarray
+        """
         return cv.PCAProject(shape_vec, self.pca_shape, self.eigenvectors)
 
 

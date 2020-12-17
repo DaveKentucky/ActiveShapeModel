@@ -164,6 +164,54 @@ class ShapeVector:
             array[i] = i
         self.vector = array
 
+    def get_bound_rectangle(self):
+        """
+        Finds rectangle bounding the shape
+
+        :return: coordinates of top left point of the rectangle and its shape as tuple: (width, height)
+        :rtype: ((float, float), (float, float))
+        """
+        x_min = np.min(self.vector[::2])
+        x_max = np.max(self.vector[::2])
+        y_min = np.min(self.vector[1::2])
+        y_max = np.max(self.vector[1::2])
+
+        return (x_min, y_min), (x_max - x_min, y_max - y_min)
+
+    def get_shape_transform_fitting_size(self, size, scale_ratio=0.9, offset_x=0, offset_y=0):
+        """
+        Finds the proper transformation to rescale the shape to given size
+
+        :param size: target size for the shape as tuple: (width, height)
+        :type size: (float, float)
+        :param scale_ratio: ratio of the target scale
+        :type scale_ratio: float
+        :param offset_x: horizontal offset of the shape in the image
+        :type offset_x: int
+        :param offset_y: vertical offset of the shape in the image
+        :type offset_y: int
+        :return: fitting similarity transformation
+        :rtype: SimilarityTransformation
+        """
+        bound_corner, bound_size = self.get_bound_rectangle()
+        ratio_x = size[0] / bound_size[0]
+        ratio_y = size[1] / bound_size[1]
+        if ratio_x < ratio_y:
+            ratio = ratio_x
+        else:
+            ratio = ratio_y
+        ratio *= scale_ratio
+
+        st = SimilarityTransformation()
+        trans_x = bound_corner[0] - bound_size[0] * (ratio_x / ratio - 1 + offset_x) / 2
+        trans_y = bound_corner[1] - bound_size[1] * (ratio_y / ratio - 1 + offset_y) / 2
+        st.a = ratio
+        st.b = 0
+        st.x_t = -trans_x * ratio
+        st.y_t = -trans_y * ratio
+
+        return st
+
 
 class SimilarityTransformation:
 

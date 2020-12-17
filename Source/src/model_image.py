@@ -1,5 +1,5 @@
 from shape_info import ShapeInfo
-from shape_vector import ShapeVector
+from shape_vector import ShapeVector, SimilarityTransformation
 
 import numpy as np
 import cv2 as cv
@@ -105,6 +105,17 @@ class ModelImage:
             cv.waitKey()
 
         return img
+
+    def build_from_shape_vector(self, sim_trans):
+        """
+        Builds point list out of ShapeVector object
+
+        :param sim_trans: similarity transformation of the shape
+        :type sim_trans: SimilarityTransformation
+        :return: None
+        """
+        self.n_points = self.shape_vector.n_points
+        self.shape_vector.restore_to_point_list(self.points, sim_trans)
 
 
 if __name__ == '__main__':

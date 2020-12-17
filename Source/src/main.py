@@ -32,3 +32,4 @@ if __name__ == '__main__':
     # create_model()
     my_db = Database()
     model = my_db.read_model('meat')
+    print(model.eigenvalues)

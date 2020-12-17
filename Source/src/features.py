@@ -60,7 +60,6 @@ class FeatureExtractor:
         if len(img.shape) == 3:
             layer = cv.cvtColor(layer, cv.COLOR_BGR2GRAY)
 
-        print(layer.shape)
         self.gaussian_pyramid = [layer]
 
         # build layers of gaussian pyramid
@@ -82,7 +81,7 @@ class FeatureExtractor:
             # cv.imshow(str(i), layer)
 
         # build layers of laplacian pyramid
-        for i in range(1, self.levels, 1):
+        for i in range(self.levels):
             gaussian = self.gaussian_pyramid[i]
 
             # create higher layer of gaussian pyramid layer
@@ -240,7 +239,11 @@ class FeatureExtractor:
         abs_sum = 0
         for i in range(ppd, -ppd - 1, -1):
             ix = points_on_normal[i + ppd, 0]
+            if ix >= self.laplacian_pyramid[level].shape[0]:
+                ix = self.laplacian_pyramid[level].shape[0] - 1
             iy = points_on_normal[i + ppd, 1]
+            if iy >= self.laplacian_pyramid[level].shape[1]:
+                iy = self.laplacian_pyramid[level].shape[1] - 1
             tmp_laplacian = self.laplacian_pyramid[level]
             array[i + ppd, 0] = tmp_laplacian[ix, iy]
             abs_sum += math.fabs(array[i + ppd, 0])

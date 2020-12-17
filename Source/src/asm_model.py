@@ -1,10 +1,11 @@
-from shape_model import ShapeModel, FitResult
-from shape_vector import ShapeVector
+from shape_model import ShapeModel, FitResult, ModelImage
+from shape_vector import ShapeVector, SimilarityTransformation
 from features import FeatureExtractor
 
 import numpy as np
 import cv2 as cv
 from dataclasses import dataclass
+import math
 
 
 class ASMModel (ShapeModel):
@@ -41,12 +42,20 @@ class ASMModel (ShapeModel):
                                                   self.search_points_on_normal)
 
     def build_model(self):
+        """
+        Builds Active Shape Model structure
 
+        :return: None
+        """
         super().build_model()
         self.build_asm_structure()
 
     def build_asm_structure(self):
+        """
+        Builds specific Active Shape model structure with gaussian pyramid
 
+        :return: None
+        """
         self.feature_extractor.shape_info = self.shape_info
 
         feature_extractor_list = list()
@@ -62,7 +71,7 @@ class ASMModel (ShapeModel):
             self.cov_mat_pyr_inv.append(list())
             self.mean_vec_pyr.append(list())
 
-        for i in range(self.pyramid_level + 1):
+        for i in range(self.pyramid_level):
             for j in range(self.n_landmarks):
                 for k in range(self.n_images):
                     f_list = feature_extractor_list[k].get_feature(self.training_images[k].points, j, i)
@@ -71,12 +80,46 @@ class ASMModel (ShapeModel):
                     for ind, f in enumerate(f_list):
                         features_matrix[k, ind] = f
                 cov_matrix = np.cov(features_matrix, bias=False)
-                cov_matrix = np.linalg.inv(cov_matrix)
+                cov_matrix = np.linalg.svd(cov_matrix)
                 mean = np.mean(features_matrix, axis=1)
                 self.cov_mat_pyr_inv[i].append(cov_matrix)
                 self.mean_vec_pyr[i].append(mean)
 
         feature_extractor_list.clear()
+
+    def fit(self, img, verbose):
+        """
+        fits the model to given image
+
+        :param img: target image
+        :type img: numpy.ndarray
+        :type verbose: int
+        :return: result of fitting
+        :rtype: ASMFitResult
+        """
+        # make sure image is in greyscale
+        grey_img = img.copy()
+        if len(grey_img.shape) == 3:
+            grey_img = cv.cvtColor(grey_img, cv.COLOR_BGR2GRAY)
+
+        # scale down the image
+        ratio = math.sqrt(40000 / (grey_img.shape[0] * grey_img.shape[1]))
+        resized_img = cv.resize(grey_img, (grey_img.shape[0] * ratio, grey_img.shape[1] * ratio))
+
+        # create temporary search model image
+        cur_search = ModelImage()
+        cur_search.shape_info = self.shape_info
+        cur_search.image = resized_img
+
+        # create fit result object for search
+        params = np.zeros([self.eigenvalues.shape[0], 1])
+        sv = cur_search.shape_vector
+        sv.vector = self.project_param_to_shape(params)
+        st = sv.get_shape_transform_fitting_size(resized_img.shape)
+        fit_result = ASMFitResult(params, st, self)
+        cur_search.build_from_shape_vector(st)
+
+        # finished at line 237 in asmmodel.cpp
 
 
 @dataclass
