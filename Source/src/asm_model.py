@@ -22,6 +22,9 @@ class ASMModel (ShapeModel):
     # eigenvectors of the model pyramid
     eigenvectors_pyr: list
 
+    # eigenvalues of the model pyramid
+    eigenvalues_pyr: list
+
     # number of points to take in count on normal vector to the shape
     points_on_normal: int
 
@@ -35,6 +38,9 @@ class ASMModel (ShapeModel):
         super().__init__()
         self.cov_mat_pyr_inv = list()
         self.mean_vec_pyr = list()
+        self.pca_shape_pyr = list()
+        self.eigenvectors_pyr = list()
+        self.eigenvalues_pyr = list()
         self.points_on_normal = points_on_normal
         self.search_points_on_normal = search_points_on_normal
         self.feature_extractor = FeatureExtractor(self.pyramid_level,
@@ -79,11 +85,16 @@ class ASMModel (ShapeModel):
                         features_matrix = np.zeros([self.n_images, len(f_list)])
                     for ind, f in enumerate(f_list):
                         features_matrix[k, ind] = f
+
                 cov_matrix = np.cov(features_matrix, bias=False)
                 cov_matrix = np.linalg.svd(cov_matrix)
                 mean = np.mean(features_matrix, axis=1)
                 self.cov_mat_pyr_inv[i].append(cov_matrix)
                 self.mean_vec_pyr[i].append(mean)
+
+            self.pca_shape_pyr.append(self.pca_shape)
+            self.eigenvectors_pyr.append(self.eigenvectors)
+            self.eigenvalues_pyr.append(self.eigenvalues)
 
         feature_extractor_list.clear()
 
@@ -119,7 +130,58 @@ class ASMModel (ShapeModel):
         fit_result = ASMFitResult(params, st, self)
         cur_search.build_from_shape_vector(st)
 
-        # finished at line 237 in asmmodel.cpp
+        total_offset: int    # sum of offsets of current iteration
+        shape_old = ShapeVector()
+        self.feature_extractor.load_image(resized_img)
+
+        for level in range(self.pyramid_level, -1, -1):
+            for run in range(10):
+                shape_old.set_from_points_array(cur_search.points)  # store old shape
+                total_offset = 0
+                best_ep = np.array([self.n_landmarks], np.int)
+
+                for i in range(self.n_landmarks):
+                    cur_best = -1
+                    best_i = 0
+                    candidate_points, features = \
+                        self.feature_extractor.get_candidates_with_feature(cur_search.points, i, level)
+
+                    for j in range(len(candidate_points)):
+                        ct = cv.Mahalanobis(features[j], self.mean_vec_pyr[level][i], self.cov_mat_pyr_inv[level][i])
+
+                        if ct < cur_best or cur_best < 0:
+                            cur_best = ct
+                            best_i = j
+                            best_ep[i] = candidate_points[j]
+
+                    total_offset += abs(best_i)
+
+                for i in range(self.n_landmarks):
+                    cur_search.points[i] = best_ep[i]
+                    cur_search.points[i, 0] <<= level
+                    cur_search.points[i, 1] <<= level
+                    if level > 0:
+                        cur_search.points[i, 0] += (1 << (level - 1))
+                        cur_search.points[i, 1] += (1 << (level - 1))
+
+                cur_search.shape_vector.set_from_points_array(cur_search.points)
+
+                # TODO: implement finding parameters for the model
+
+                cur_search.shape_vector = \
+                    cv.PCABackProject(fit_result.params, self.pca_shape_pyr[level], self.eigenvectors_pyr[level])
+                cur_search.build_from_shape_vector(fit_result.similarity_trans)
+
+                avg_mov = total_offset / self.n_landmarks
+                if avg_mov < 1.3:
+                    run += 1
+                    break
+
+        st_ = SimilarityTransformation()
+        st_.a = 1 / ratio
+        fit_result.similarity_trans = st_.multiply(fit_result.similarity_trans)
+
+        return fit_result
 
 
 @dataclass
