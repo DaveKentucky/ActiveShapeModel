@@ -1,11 +1,13 @@
-from shape_model import ShapeModel
+from shape_model import ShapeModel, FitResult
+from shape_vector import ShapeVector
 from features import FeatureExtractor
 
 import numpy as np
 import cv2 as cv
+from dataclasses import dataclass
 
 
-class ASMModel(ShapeModel):
+class ASMModel (ShapeModel):
 
     # inverted covariance matrix pyramids for each landmark point
     cov_mat_pyr_inv: list
@@ -75,6 +77,16 @@ class ASMModel(ShapeModel):
                 self.mean_vec_pyr[i].append(mean)
 
         feature_extractor_list.clear()
+
+
+@dataclass
+class ASMFitResult (FitResult):
+    asm_model: ASMModel     # Active Shape Model
+
+    def to_point_list(self, pts_vec):
+        sv = ShapeVector()
+        sv.vector = self.asm_model.project_param_to_shape(self.params)
+        sv.restore_to_point_list(pts_vec, self.similarity_trans)
 
 
 if __name__ == '__main__':

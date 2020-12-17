@@ -1,10 +1,17 @@
 from shape_info import ShapeInfo
-from shape_vector import ShapeVector
+from shape_vector import ShapeVector, SimilarityTransformation
 from model_image import ModelImage
 
-import os
 import cv2 as cv
 import numpy as np
+from dataclasses import dataclass
+
+
+# dataclass of model fitting result
+@dataclass
+class FitResult:
+    params: list    # parameters for the model
+    similarity_trans: SimilarityTransformation  # transformation to recover shape after fitting
 
 
 class ShapeModel:
@@ -134,6 +141,12 @@ class ShapeModel:
                 break
 
         self.mean_shape = current_mean
+
+    def project_param_to_shape(self, params_vec):
+        return cv.PCABackProject(params_vec, self.pca_shape, self.eigenvectors)
+
+    def project_shape_to_param(self, shape_vec):
+        return cv.PCAProject(shape_vec, self.pca_shape, self.eigenvectors)
 
 
 if __name__ == '__main__':
