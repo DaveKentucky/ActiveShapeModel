@@ -98,13 +98,49 @@ class ASMModel (ShapeModel):
 
         feature_extractor_list.clear()
 
-    def fit(self, img, verbose):
+    def fit_all(self, img, top_left, size):
+        """
+        fits all points to given image
+
+        :param img: target image
+        :type img: numpy.ndarray
+        :param top_left: top left corner of search area rectangle in the image
+        :type top_left: (int, int)
+        :param size: size of the search area rectangle
+        :type size: (int, int)
+        :return: result of fitting
+        :rtype: ASMFitResult
+        """
+        x = top_left[0]
+        y = top_left[1]
+        w = size[1]
+        h = size[0]
+        x -= size[0]
+        y -= size[1]
+        if x < 0:
+            x = 0
+        if y < 0:
+            y = 0
+        if x + size[0] > img.shape[1]:
+            w = img.shape[1] - x
+        if y + size[1] > img.shape[0]:
+            h = img.shape[0] - y
+
+        fit_result = self.fit(img[y:y + h, x:x + w])
+        s2 = SimilarityTransformation()
+        s2.x_t = x
+        s2.y_t = y
+        s2.a = 1
+        fit_result.similarity_trans = s2.multiply(fit_result.similarity_trans)
+
+        return fit_result
+
+    def fit(self, img):
         """
         fits the model to given image
 
         :param img: target image
         :type img: numpy.ndarray
-        :type verbose: int
         :return: result of fitting
         :rtype: ASMFitResult
         """
