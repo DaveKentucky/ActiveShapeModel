@@ -145,24 +145,24 @@ class ShapeVector:
             for i, c in enumerate(vec.vector):
                 self.vector[i] += c
 
-    def restore_to_point_list(self, pts_vec, sim_trans):
+    def restore_to_point_list(self, sim_trans):
         """
         Perform a similarity transformation and restore vector to list of points
 
-        :param pts_vec: vector of points
-        :type pts_vec: numpy.ndarray
         :param sim_trans: transformation object of the shape
         :type sim_trans: SimilarityTransformation
-        :return: None
+        :return: array of points (Nx2 array)
+        :rtype: numpy.ndarray
         """
-        pts_vec.resize([self.n_points])
+        pts_vec = np.zeros([self.n_points, 2])
         sv = ShapeVector()
         sv = sim_trans.transform(self, sv)
 
-        array = np.zeros([2 * self.n_points], np.float)
-        for i in sv.vector:
-            array[i] = i
-        self.vector = array
+        for i in range(sv.n_points):
+            pts_vec[i, 0] = sv.vector[i * 2]
+            pts_vec[i, 1] = sv.vector[i * 2 + 1]
+
+        return pts_vec
 
     def get_bound_rectangle(self):
         """

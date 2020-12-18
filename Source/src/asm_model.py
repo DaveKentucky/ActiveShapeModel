@@ -219,15 +219,34 @@ class ASMModel (ShapeModel):
 
         return fit_result
 
+    def show_result(self, img, result):
+        """
+        Shows the image with fitted model points
+
+        :param img: target image
+        :type img: numpy.ndarray
+        :param result: ASM model fitting result
+        :type result: ASMFitResult
+        :return: None
+        """
+        if len(img.shape) == 2:
+            image = cv.cvtColor(img, cv.COLOR_GRAY2RGB)
+        else:
+            image = img.copy()
+
+        points = result.to_point_list()
+        image = self.shape_info.draw_points_on_image(image, points, False)
+        cv.imshow("result image", image)
+
 
 @dataclass
 class ASMFitResult (FitResult):
     asm_model: ASMModel     # Active Shape Model
 
-    def to_point_list(self, pts_vec):
+    def to_point_list(self):
         sv = ShapeVector()
         sv.vector = self.asm_model.project_param_to_shape(self.params)
-        sv.restore_to_point_list(pts_vec, self.similarity_trans)
+        return sv.restore_to_point_list(self.similarity_trans)
 
 
 if __name__ == '__main__':
