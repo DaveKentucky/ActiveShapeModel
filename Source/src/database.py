@@ -354,6 +354,7 @@ class Database:
                 self.read_into_lists('start_point_index', 'is_closed', 'contours', 'shape_info_id', si_id)
             shape_info.contour_start_index = start_indices
             shape_info.contour_is_closed = types
+            shape_info.n_contours = len(start_indices)
 
             # read points info
             query = f"select point_index, contour_id, contour_type, previous, next from point_info " \

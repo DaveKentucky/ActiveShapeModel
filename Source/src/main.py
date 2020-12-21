@@ -1,6 +1,7 @@
 import gui
 from database import Database
 
+import cv2 as cv
 
 def create_model():
 
@@ -27,9 +28,22 @@ def create_model():
         model.build_model()
 
 
+def search_with_model():
+    image, model_name = gui.select_test_data_files()
+    if image is not None:
+        top_left, size = gui.mark_search_area(image)
+        if model_name != '':
+            my_db = Database()
+            model = my_db.read_model(model_name)
+            # model.build_model()
+            model.fit_all(image, top_left, size)
+
+
 if __name__ == '__main__':
 
-    # create_model()
     my_db = Database()
     model = my_db.read_model('meat')
-    print(model.eigenvalues)
+    image = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/Data/meat_database/F1102flb.bmp")
+    result = model.fit_all(image, (30, 185), (663, 306))
+    model.show_result(image, result)
+    cv.waitKey(0)

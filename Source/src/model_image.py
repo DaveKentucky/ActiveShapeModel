@@ -115,7 +115,7 @@ class ModelImage:
         :return: None
         """
         self.n_points = self.shape_vector.n_points
-        self.shape_vector.restore_to_point_list(self.points, sim_trans)
+        self.points = self.shape_vector.restore_to_point_list(sim_trans)
 
 
 if __name__ == '__main__':

@@ -10,11 +10,8 @@ class FeatureExtractor:
     # number of levels of the pyramid
     levels: int
 
-    # gaussian pyramid of the image
+    # gaussian pyramid of the image (in greyscale)
     gaussian_pyramid: list
-
-    # grayscale gaussian pyramid of the image
-    grayscale_pyramid: list
 
     # laplacian pyramid of the image
     laplacian_pyramid: list
@@ -42,7 +39,6 @@ class FeatureExtractor:
         self.levels = levels
         self.points_per_direction = points_per_direction
         self.search_points_per_direction = search_points_per_direction
-        self.grayscale_pyramid = list()
         self.laplacian_pyramid = list()
 
         if shape_info is not None:
@@ -69,21 +65,13 @@ class FeatureExtractor:
             # cv.imshow(str(i), layer)
 
         # convert image to grayscale
-        if len(img.shape) != 1:
+        if len(img.shape) == 3:
             layer = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         else:
             layer = img.copy()
 
-        # build layers of grayscale gaussian pyramid
-        for i in range(self.levels):
-            layer = cv.pyrDown(layer)
-            self.grayscale_pyramid.append(layer)
-            # cv.imshow(str(i), layer)
-
         # build layers of laplacian pyramid
-        for i in range(self.levels):
-            gaussian = self.gaussian_pyramid[i]
-
+        for gaussian in self.gaussian_pyramid:
             # create higher layer of gaussian pyramid layer
             gaussian_extended = cv.pyrDown(gaussian)
             # expand the upper layer of gaussian pyramid
@@ -168,7 +156,7 @@ class FeatureExtractor:
         :rtype: numpy.ndarray
         """
         direction = self.get_normal_direction(points, point_id)
-        ppd = self.points_per_direction + 1
+        ppd = self.points_per_direction
 
         nx, ny, j = self.get_center(abs(offset), 0, 0, direction)
 
@@ -186,8 +174,10 @@ class FeatureExtractor:
 
         output_points = np.zeros([2 * ppd + 1, 2], np.int)
         for i in range(ppd, -ppd - 1, -1):
-            rx = (points[point_id][0] >> level) + nx + offset_x
-            ry = (points[point_id][1] >> level) + ny + offset_y
+            x = int(points[point_id, 0])
+            y = int(points[point_id, 1])
+            rx = (x >> level) + nx + offset_x
+            ry = (y >> level) + ny + offset_y
 
             if rx < 0:
                 rx = 0
@@ -233,7 +223,7 @@ class FeatureExtractor:
         step = 1.3 * math.sqrt((x_max - x_min) * (y_max - y_min) / 10000.)
 
         points_on_normal = self.get_points_on_normal(points, point_id, level, step)
-        ppd = self.points_per_direction + 1
+        ppd = self.points_per_direction
         array = np.zeros([2 * ppd + 1, 1])
 
         abs_sum = 0
@@ -270,19 +260,22 @@ class FeatureExtractor:
         features = list()
 
         img = self.laplacian_pyramid[level]
-        sppd = self.search_points_per_direction + 1
-        ppd = self.points_per_direction + 1
+        sppd = self.search_points_per_direction
+        ppd = self.points_per_direction
 
-        for i in range(sppd, -sppd, -1):
+        for i in range(-sppd, sppd + 1, 1):
             points_on_normal = self.get_points_on_normal(points, point_id, level, 1, i)
 
-            normals_vector = np.zeros([2 * self.points_per_direction + 1, 1])
+            normals_vector = np.zeros([2 * ppd + 1, 1])
             abs_sum = 0
-            for j in range(-ppd, ppd, 1):
-                normals_vector[j + ppd, 0] = img[points_on_normal[j + ppd]]
+            for j in range(-ppd - 1, ppd + 1, 1):
+                pt_x = int(points_on_normal[j + ppd][0])
+                pt_y = int(points_on_normal[j + ppd][1])
+                normals_vector[j + ppd] = img[pt_x, pt_y]
                 abs_sum += math.fabs(normals_vector[j + ppd, 0])
 
-            normals_vector = normals_vector / abs_sum
+            if abs_sum > 0:
+                normals_vector = normals_vector / abs_sum
             candidate_points.append(points_on_normal[ppd])
             features.append(normals_vector)
 

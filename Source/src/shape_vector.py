@@ -154,7 +154,7 @@ class ShapeVector:
         :return: array of points (Nx2 array)
         :rtype: numpy.ndarray
         """
-        pts_vec = np.zeros([self.n_points, 2])
+        pts_vec = np.zeros([self.n_points, 2], np.int)
         sv = ShapeVector()
         sv = sim_trans.transform(self, sv)
 
@@ -172,7 +172,7 @@ class ShapeVector:
         :rtype: ((float, float), (float, float))
         """
         x_min = np.min(self.vector[::2])
-        x_max = np.max(self.vector[::2])
+        x_max = np.max(self.vector[:2])
         y_min = np.min(self.vector[1::2])
         y_max = np.max(self.vector[1::2])
 

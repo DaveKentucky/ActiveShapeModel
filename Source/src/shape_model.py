@@ -63,10 +63,10 @@ class ShapeModel:
         :return: None
         """
         length = self.training_images[0].shape_vector.n_points * 2
-        pca_data = np.empty((length, self.n_images), np.float)
+        pca_data = np.empty((self.n_images, length), np.float)
         for i in range(self.n_images):
             for j in range(length):
-                pca_data[j, i] = self.training_images[i].shape_vector.vector[j]
+                pca_data[i, j] = self.training_images[i].shape_vector.vector[j]
 
         self.pca_shape, self.eigenvectors, self.eigenvalues = cv.PCACompute2(pca_data, mean=None, maxComponents=10)
 

@@ -1,25 +1,34 @@
 from asm_model import ASMModel
 from shape_model import ModelImage
 from shape_creator import ShapeCreator
+import select_area as sa
 
 import PySimpleGUI as sg
 import os.path
 import cv2 as cv
+import sys
 
 sg.theme("Dark Grey 13")
 
 
-def make_window_read_data():
+def make_window_read_data(training):
     """
     Creates window with functionality of reading data for model
 
+    :param training: defines if window should be used for selection of training or testing data
+    :type training: bool
     :return: window reading data for model from file
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
+    if training:
+        data_type = 'training'
+    else:
+        data_type = 'test'
+
     # layout of the left column with directories and files
     files_column = [
         [
-            sg.Text("Select directory containing training data for the model")
+            sg.Text(f"Select directory containing {data_type} data for the model")
         ],
         [
             sg.Text("Folder"),
@@ -56,7 +65,7 @@ def make_window_read_data():
         ]
     ]
 
-    return sg.Window("Choose training data", layout, element_justification="c", finalize=True)
+    return sg.Window(f"Choose {data_type} data", layout, element_justification="c", finalize=True)
 
 
 def make_window_mark_landmarks(points):
@@ -180,7 +189,7 @@ def select_training_data_files():
     :return: ASMModel object with set training images
     :rtype: ASMModel
     """
-    window = make_window_read_data()
+    window = make_window_read_data(True)
     model = None
     files = None
 
@@ -208,7 +217,7 @@ def select_training_data_files():
         elif event == "-FILE LIST-":  # file was chosen from the listbox
             try:
                 if len(values["-FILE LIST-"]) > 0:
-                    filename, extension = os.path.splitext(values["-FILE LIST-"][0])
+                    # filename, extension = os.path.splitext(values["-FILE LIST-"][0])
                     img = cv.imread(values["-FOLDER-"] + "/" + values["-FILE LIST-"][0])
                     img_bytes = cv.imencode(".png", img)[1].tobytes()
                     (window["-IMAGE-"]).update(data=img_bytes)
@@ -231,6 +240,97 @@ def select_training_data_files():
 
     window.close()
     return model
+
+
+def select_test_data_files():
+    window = make_window_read_data(False)
+    img = None
+    files = None
+    model_name = ''
+
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-FOLDER-":     # folder name was filled in
+            folder = values["-FOLDER-"]
+            try:
+                # Get list of files in folder
+                file_list = os.listdir(folder)
+                for file in os.listdir(folder):
+                    img = cv.imread(folder + "/" + file)
+            except OSError:
+                file_list = []
+
+            files = [
+                f
+                for f in file_list
+                if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith((".jpg", ".png", ".bmp"))
+            ]
+            window["-FILE LIST-"].update(files)
+        elif event == "-FILE LIST-":  # file was chosen from the listbox
+            try:
+                if len(values["-FILE LIST-"]) > 0:
+                    img = cv.imread(values["-FOLDER-"] + "/" + values["-FILE LIST-"][0])
+                    img_bytes = cv.imencode(".png", img)[1].tobytes()
+                    (window["-IMAGE-"]).update(data=img_bytes)
+            except OSError:
+                print("No element selected")
+        elif event == "-SELECT BUTTON-":
+            if files is None:
+                sg.PopupOK("Select correct folder with data!")
+            elif len(files) <= 0:
+                sg.PopupOK("Select correct folder with data!")
+            elif len(values["-MODEL NAME-"]) <= 0:
+                sg.PopupOK("Type in model name!")
+            elif img is None:
+                sg.PopupOK("Select an image for test data!")
+            else:
+                model_name = values["-MODEL NAME-"]
+                break
+
+    window.close()
+    return img, model_name
+
+
+def mark_search_area(image):
+    """
+    Enables the user to mark search area for the model on the given image
+
+    :param image: image where the model should be applied
+    :type image: numpy.ndarray
+    :return: top left corner of the search area and its size
+    :rtype: ((int, int), (int, int))
+    """
+    # Set recursion limit
+    sys.setrecursionlimit(10 ** 9)
+
+    # create an instance of rectangle mark operator class
+    select_window = sa.DragRectangle
+
+    # read image's width and height
+    width = image.shape[1]
+    height = image.shape[0]
+
+    # initiate the operator object
+    sa.init(select_window, image, "Image", width, height)
+    cv.namedWindow(select_window.window_name)
+    cv.setMouseCallback(select_window.window_name, sa.drag_rectangle, select_window)
+    cv.imshow("Image", select_window.image)
+
+    # loop until selected area is confirmed
+    wait_time = 1000
+    while cv.getWindowProperty("Image", cv.WND_PROP_VISIBLE) >= 1:
+        cv.imshow("Image", select_window.image)
+        key = cv.waitKey(wait_time)
+        if key == 27:
+            cv.destroyWindow("Image")
+        # if return_flag is True, break from the loop
+        elif select_window.return_flag:
+            break
+
+    left, top, right, bottom = sa.get_area_rectangle(select_window)
+    return (left, top), (right - left, bottom - top)
 
 
 # if __name__ == '__main__':
