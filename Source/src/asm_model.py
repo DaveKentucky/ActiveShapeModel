@@ -38,7 +38,7 @@ class ASMModel (ShapeModel):
     # feature extractor object for searching points in the image
     feature_extractor: FeatureExtractor
 
-    def __init__(self, points_on_normal=4, search_points_on_normal=6):
+    def __init__(self, points_on_normal=7, search_points_on_normal=10):
         super().__init__()
         self.cov_mat_pyr_inv = list()
         self.mean_vec_pyr = list()
@@ -123,7 +123,7 @@ class ASMModel (ShapeModel):
         self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
         self.sigma2_pyr[0] = self.sigma2
 
-    def fit_all(self, img, top_left, size):
+    def fit_all(self, img, top_left, size, verbose):
         """
         fits all points to given image
 
@@ -133,6 +133,8 @@ class ASMModel (ShapeModel):
         :type top_left: (int, int)
         :param size: size of the search area rectangle
         :type size: (int, int)
+        :param verbose: if the progress should be displayed
+        :type verbose: bool
         :return: result of fitting
         :rtype: ASMFitResult
         """
@@ -154,7 +156,7 @@ class ASMModel (ShapeModel):
         # if y + size[1] > img.shape[0]:
         #     h = img.shape[0] - y
 
-        fit_result = self.fit(img[y:y + h, x:x + w])
+        fit_result = self.fit(img[y:y + h, x:x + w], verbose)
         s2 = SimilarityTransformation()
         s2.x_t = x
         s2.y_t = y
@@ -163,12 +165,14 @@ class ASMModel (ShapeModel):
 
         return fit_result
 
-    def fit(self, img):
+    def fit(self, img, verbose):
         """
         fits the model to given image
 
         :param img: target image
         :type img: numpy.ndarray
+        :param verbose: if the progress should be displayed
+        :type verbose: bool
         :return: result of fitting
         :rtype: ASMFitResult
         """
@@ -191,8 +195,7 @@ class ASMModel (ShapeModel):
         # create fit result object for search
         params = np.zeros([1, self.eigenvalues.shape[0]])
         sv = cur_search.shape_vector
-        vector = self.project_param_to_shape(params)
-        sv.set_from_vector(vector[0])
+        sv.set_from_vector(self.project_param_to_shape(params)[0])
         st = sv.get_shape_transform_fitting_size(resized_img.shape)
         fit_result = ASMFitResult(params, st, self)
         cur_search.build_from_shape_vector(st)
@@ -201,26 +204,39 @@ class ASMModel (ShapeModel):
         shape_old = ShapeVector()
         self.feature_extractor.load_image(resized_img)
 
+        if verbose:
+            cur_search.show(True)
+
         for level in range(self.pyramid_level - 1, -1, -1):
+            if verbose:
+                print(f"Pyramid level: {level}\n")
             for run in range(10):
                 shape_old.set_from_points_array(cur_search.points)  # store old shape
                 total_offset = 0
                 best_ep = np.zeros((self.n_landmarks, 2), np.int)
 
+                # find best fit for every point
                 for i in range(self.n_landmarks):
+                    if verbose:
+                        print(f"Fitting point {i}\n")
+
                     cur_best = -1
                     best_i = 0
                     candidate_points, features = \
                         self.feature_extractor.get_candidates_with_feature(cur_search.points, i, level)
 
+                    # select best candidate point with Mahalanobis distance
                     for j in range(len(candidate_points)):
                         x = np.zeros(len(features[j]))
                         for f, feature in enumerate(features[j]):
                             x[f] = feature
+
                         mean = self.mean_vec_pyr[level][i]
                         inv_cov = self.cov_mat_pyr_inv[level][i]
                         ct = distance.mahalanobis(x, mean, inv_cov)
                         # ct = cv.Mahalanobis(features[j], self.mean_vec_pyr[level][i], self.cov_mat_pyr_inv[level][i])
+                        # if verbose:
+                        #     print(f"Mahalanobis distance: {ct}")
 
                         if ct < cur_best or cur_best < 0:
                             cur_best = ct
@@ -229,7 +245,10 @@ class ASMModel (ShapeModel):
                             best_ep[i, 1] = candidate_points[j][1]
 
                     total_offset += abs(best_i)
+                    if verbose:
+                        cur_search.show(True)
 
+                # modify results with factor of current pyramid level
                 for i in range(self.n_landmarks):
                     cur_search.points[i] = best_ep[i]
                     x = int(cur_search.points[i, 0])
@@ -242,20 +261,29 @@ class ASMModel (ShapeModel):
 
                 cur_search.shape_vector.set_from_points_array(cur_search.points)
 
+                if verbose:
+                    cur_search.show(True)
+
+                # project found shape to PCA model and back to get parameters
                 fit_result = self.find_params_for_shape(cur_search.shape_vector, shape_old, fit_result, level)
 
-                vec = cv.PCABackProject(fit_result.params, self.pca_shape_pyr[level], self.eigenvectors_pyr[level])
-                cur_search.shape_vector.vector = vec[0]
+                cur_search.shape_vector.set_from_vector(cv.PCABackProject(
+                    fit_result.params,
+                    self.pca_shape_pyr[level],
+                    self.eigenvectors_pyr[level])[0])
                 cur_search.build_from_shape_vector(fit_result.similarity_trans)
 
                 avg_mov = total_offset / self.n_landmarks
+                if verbose:
+                    print(f"Iteration: {run + 1}, Average offset: {avg_mov}\n")
+                    cur_search.show(True)
+
                 if avg_mov < 1.3:
-                    run += 1
                     break
 
-            # print out points coordinates after finishing fitting at every level
-            print(f"Current points at level {level}:")
-            print(cur_search.points)
+            if verbose:
+                print(f"Finished fitting after {run + 1} iterations, Average offset of last iteration: {avg_mov}\n")
+                cur_search.show(True)
 
         st_ = SimilarityTransformation()
         st_.a = 1 / ratio

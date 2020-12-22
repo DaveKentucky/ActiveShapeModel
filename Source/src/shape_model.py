@@ -53,7 +53,7 @@ class ShapeModel:
     pca_full_shape: dict
 
     # level of the image pyramid constant
-    pyramid_level = 3
+    pyramid_level = 1
 
     def __init__(self):
         self.shape_info = None

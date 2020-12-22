@@ -92,7 +92,7 @@ class ModelImage:
         :return: image copy with model shapes
         :rtype: numpy.ndarray
         """
-        if len(self.image.shape) == 1:
+        if len(self.image.shape) != 3:
             img = cv.cvtColor(self.image, cv.COLOR_GRAY2RGB)
         else:
             img = self.image.copy()
@@ -102,6 +102,7 @@ class ModelImage:
 
         if show:
             cv.imshow("Image", img)
+            print("Press any key to continue...")
             cv.waitKey()
 
         return img

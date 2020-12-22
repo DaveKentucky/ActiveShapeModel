@@ -194,7 +194,7 @@ class ShapeVector:
         """
         Finds the proper transformation to rescale the shape to given size
 
-        :param size: target size for the shape as tuple: (width, height)
+        :param size: target size for the shape as tuple: (height, width)
         :type size: (float, float)
         :param scale_ratio: ratio of the target scale
         :type scale_ratio: float
@@ -206,8 +206,8 @@ class ShapeVector:
         :rtype: SimilarityTransformation
         """
         bound_corner, bound_size = self.get_bound_rectangle()
-        ratio_x = size[0] / bound_size[0]
-        ratio_y = size[1] / bound_size[1]
+        ratio_x = size[1] / bound_size[0]
+        ratio_y = size[0] / bound_size[1]
         if ratio_x < ratio_y:
             ratio = ratio_x
         else:
