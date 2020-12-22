@@ -26,6 +26,9 @@ class ASMModel (ShapeModel):
     # eigenvalues of the model pyramid
     eigenvalues_pyr: list
 
+    # sigma2 value pyramid
+    sigma2_pyr: list
+
     # number of points to take in count on normal vector to the shape
     points_on_normal: int
 
@@ -42,6 +45,7 @@ class ASMModel (ShapeModel):
         self.pca_shape_pyr = list()
         self.eigenvectors_pyr = list()
         self.eigenvalues_pyr = list()
+        self.sigma2_pyr = list()
         self.points_on_normal = points_on_normal
         self.search_points_on_normal = search_points_on_normal
         self.feature_extractor = FeatureExtractor(self.pyramid_level,
@@ -105,6 +109,20 @@ class ASMModel (ShapeModel):
 
         feature_extractor_list.clear()
 
+        self.sigma2_pyr = [0., 0., 0.]
+        cur_sigma2 = np.sum(self.pca_full_shape['eigenvalues'])
+
+        for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
+            if i < 5:
+                cur_sigma2 -= eigenvalue[0]
+        self.sigma2_pyr[2] = cur_sigma2 / (self.n_landmarks * 2 - 4)
+
+        for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
+            if 5 <= i < 20:
+                cur_sigma2 -= eigenvalue[0]
+        self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
+        self.sigma2_pyr[0] = self.sigma2
+
     def fit_all(self, img, top_left, size):
         """
         fits all points to given image
@@ -118,6 +136,9 @@ class ASMModel (ShapeModel):
         :return: result of fitting
         :rtype: ASMFitResult
         """
+        image = self.shape_info.draw_points_on_image(img, self.training_images[0].points, False)
+        cv.imshow("original", image)
+
         x = top_left[0]
         y = top_left[1]
         w = size[0]
@@ -221,7 +242,7 @@ class ASMModel (ShapeModel):
 
                 cur_search.shape_vector.set_from_points_array(cur_search.points)
 
-                # TODO: implement finding parameters for the model
+                fit_result = self.find_params_for_shape(cur_search.shape_vector, shape_old, fit_result, level)
 
                 vec = cv.PCABackProject(fit_result.params, self.pca_shape_pyr[level], self.eigenvectors_pyr[level])
                 cur_search.shape_vector.vector = vec[0]
@@ -232,10 +253,94 @@ class ASMModel (ShapeModel):
                     run += 1
                     break
 
+            # print out points coordinates after finishing fitting at every level
+            print(f"Current points at level {level}:")
+            print(cur_search.points)
+
         st_ = SimilarityTransformation()
         st_.a = 1 / ratio
         fit_result.similarity_trans = st_.multiply(fit_result.similarity_trans)
 
+        return fit_result
+
+    def find_params_for_shape(self, vec, vec_old, fit_result_old, l):
+        """
+        Finds b parameters of the model for given shape
+
+        :param vec: fitted shape
+        :type vec: ShapeVector
+        :param vec_old: prior shape
+        :type vec_old: ShapeVector
+        :param fit_result_old: result object of the fitting
+        :type fit_result_old: ASMFitResult
+        :param l: level of the pyramid
+        :type l: int
+        :return: fitting result with found parameters set
+        :rtype: ASMFitResult
+        """
+        c = np.array([0.0005, 0.0005, 0.0005])
+        vec_t = ShapeVector()
+        vec_t.set_from_vector(vec_old.vector)
+        vec_t.subtract_vector(vec)
+        rho2 = c[l] * vec_t.vector.dot(vec_t.vector)
+        x = ShapeVector()
+        x_from_params = ShapeVector()
+        vec_repr = ShapeVector()
+
+        cur_trans = fit_result_old.similarity_trans
+        cur_params = np.zeros(self.eigenvalues_pyr[l].shape)
+        for i in range(self.eigenvalues_pyr[l].shape[0]):
+            if i < fit_result_old.params.shape[1]:
+                cur_params[i, 0] = fit_result_old.params[0, i]
+            else:
+                cur_params[i, 0] = 0
+
+        ii = 0
+        while True:
+            s = cur_trans.get_scale()
+            last_params = cur_params.copy()
+
+            vec_r = cur_trans.inverted_transform(vec)
+            p = self.sigma2_pyr[l] / (self.sigma2_pyr[l] + rho2 / (s * s))
+            delta2 = 1 / (1 / self.sigma2_pyr[l] + s * s / rho2)
+            x_from_params.set_from_vector(cv.PCABackProject(cur_params.T,
+                                                            self.pca_shape_pyr[l],
+                                                            self.eigenvectors_pyr[l],
+                                                            self.eigenvalues_pyr[l])[0])
+            tmp = vec_r.vector.reshape([1, 96])
+            tmp_full_params = cv.PCAProject(tmp,
+                                            self.pca_full_shape['mean'],
+                                            self.pca_full_shape['eigenvectors'],
+                                            self.pca_full_shape['eigenvalues'])
+            vec_repr.set_from_vector(cv.PCABackProject(tmp_full_params,
+                                                       self.pca_full_shape['mean'],
+                                                       self.pca_full_shape['eigenvectors'],
+                                                       self.pca_full_shape['eigenvalues'])[0])
+            x.set_from_vector(p * vec_repr.vector + (1 - p) * x_from_params.vector)
+            x2 = x.vector.dot(x.vector) + (x.vector.shape[0] - 4) * delta2
+
+            tmp = x.vector.reshape([1, 96])
+            cur_params = cv.PCAProject(tmp,
+                                       self.pca_shape_pyr[l],
+                                       self.eigenvectors_pyr[l],
+                                       self.eigenvalues_pyr[l])
+            for i in range(self.eigenvalues_pyr[l].shape[0]):
+                cur_params[0, i] *= (self.eigenvalues[i, 0] / self.eigenvalues[i, 0] + self.sigma2_pyr[l])
+
+            n_p = x.n_points
+            cur_trans.a = vec.vector.dot(x.vector) / x2
+            cur_trans.b = 0
+            for i in range(n_p):
+                cur_trans.b += x.get_point(i)[0] * vec.get_point(i)[1] - x.get_point(i)[1] * vec.get_point(i)[0]
+            cur_trans.b /= x2
+            cur_trans.x_t = vec.get_x_mean()
+            cur_trans.y_t = vec.get_y_mean()
+
+            ii += 1
+            if ii == 20 or np.linalg.norm(last_params - cur_params) <= 1e-4:
+                break
+
+        fit_result = ASMFitResult(cur_params, cur_trans, self)
         return fit_result
 
     def show_result(self, img, result):

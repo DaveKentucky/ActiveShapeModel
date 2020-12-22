@@ -59,7 +59,7 @@ class FeatureExtractor:
         self.gaussian_pyramid = [layer]
 
         # build layers of gaussian pyramid
-        for i in range(self.levels):
+        for i in range(self.levels -1):
             layer = cv.pyrDown(layer)
             self.gaussian_pyramid.append(layer)
             # cv.imshow(str(i), layer)

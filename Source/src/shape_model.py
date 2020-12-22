@@ -46,6 +46,12 @@ class ShapeModel:
     # eigenvalues of the model
     eigenvalues: np.ndarray
 
+    # parameter for restoring the shape
+    sigma2: float
+
+    # full PCA shape with parameters for restoring shape
+    pca_full_shape: dict
+
     # level of the image pyramid constant
     pyramid_level = 3
 
@@ -69,6 +75,18 @@ class ShapeModel:
                 pca_data[i, j] = self.training_images[i].shape_vector.vector[j]
 
         self.pca_shape, self.eigenvectors, self.eigenvalues = cv.PCACompute2(pca_data, mean=None, maxComponents=10)
+
+        eigenvalues_sum = np.sum(self.eigenvalues)
+        s_cur = 0
+        for eigenvalue in self.eigenvalues:
+            s_cur += eigenvalue[0]
+            if s_cur > eigenvalues_sum * 0.98:
+                break
+        vd = self.training_images[0].shape_vector.n_points * 2
+        self.sigma2 = (eigenvalues_sum - s_cur) / (vd - 4)
+        self.pca_full_shape = {'mean': self.pca_shape,
+                               'eigenvalues': self.eigenvalues,
+                               'eigenvectors': self.eigenvectors}
 
     def build_model(self):
         """

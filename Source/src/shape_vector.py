@@ -37,7 +37,7 @@ class ShapeVector:
         """
         Sets vector with copy of given vector
 
-        :param v: vector of points
+        :param v: vector of points (2Nx1 array)
         :type v: numpy.ndarray
         :return: None
         """
@@ -144,6 +144,18 @@ class ShapeVector:
         if self.n_points == vec.n_points:
             for i, c in enumerate(vec.vector):
                 self.vector[i] += c
+
+    def subtract_vector(self, vec):
+        """
+        Subtracts given vector from the vector
+
+        :param vec: dividend vector
+        :type vec: ShapeVector
+        :return: None
+        """
+        if self.n_points == vec.n_points:
+            for i, c in enumerate(vec.vector):
+                self.vector[i] -= c
 
     def restore_to_point_list(self, sim_trans):
         """
@@ -276,15 +288,14 @@ class SimilarityTransformation:
 
         return vec_dst
 
-    def inverted_transform(self, vec_src, vec_dst):
+    def inverted_transform(self, vec_src):
         """
         :param vec_src:
         :type vec_src: ShapeVector
-        :param vec_dst:
-        :type vec_dst: ShapeVector
         :return:
         :rtype: ShapeVector
         """
+        vec_dst = ShapeVector()
         n_points = vec_src.n_points
         div = (pow(self.a, 2) + pow(self.b, 2))
         x11 = self.a / div
