@@ -184,7 +184,7 @@ class ShapeVector:
         :rtype: ((float, float), (float, float))
         """
         x_min = np.min(self.vector[::2])
-        x_max = np.max(self.vector[:2])
+        x_max = np.max(self.vector[::2])
         y_min = np.min(self.vector[1::2])
         y_max = np.max(self.vector[1::2])
 

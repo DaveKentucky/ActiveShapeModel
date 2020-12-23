@@ -183,10 +183,10 @@ class FeatureExtractor:
                 rx = 0
             if ry < 0:
                 ry = 0
-            if rx >= self.gaussian_pyramid[level].shape[0]:
-                rx = self.gaussian_pyramid[level].shape[0] - 1
-            if ry >= self.gaussian_pyramid[level].shape[1]:
-                ry = self.gaussian_pyramid[level].shape[1] - 1
+            if rx >= self.gaussian_pyramid[level].shape[1]:
+                rx = self.gaussian_pyramid[level].shape[1] - 1
+            if ry >= self.gaussian_pyramid[level].shape[0]:
+                ry = self.gaussian_pyramid[level].shape[0] - 1
 
             output_points[i + ppd, 0] = int(rx)
             output_points[i + ppd, 1] = int(ry)
@@ -229,13 +229,14 @@ class FeatureExtractor:
         abs_sum = 0
         for i in range(ppd, -ppd - 1, -1):
             ix = points_on_normal[i + ppd, 0]
-            if ix >= self.laplacian_pyramid[level].shape[0]:
-                ix = self.laplacian_pyramid[level].shape[0] - 1
+            if ix >= self.laplacian_pyramid[level].shape[1]:
+                ix = self.laplacian_pyramid[level].shape[1] - 1
             iy = points_on_normal[i + ppd, 1]
-            if iy >= self.laplacian_pyramid[level].shape[1]:
-                iy = self.laplacian_pyramid[level].shape[1] - 1
+            if iy >= self.laplacian_pyramid[level].shape[0]:
+                iy = self.laplacian_pyramid[level].shape[0] - 1
             tmp_laplacian = self.laplacian_pyramid[level]
-            array[i + ppd, 0] = tmp_laplacian[ix, iy]
+            lap_pt = tmp_laplacian[iy, ix]
+            array[i + ppd, 0] = lap_pt
             abs_sum += math.fabs(array[i + ppd, 0])
 
         if abs_sum != 0:
@@ -266,13 +267,13 @@ class FeatureExtractor:
         for i in range(-sppd, sppd + 1, 1):
             points_on_normal = self.get_points_on_normal(points, point_id, level, 1, i)
 
-            normals_vector = np.zeros([2 * ppd + 1, 1])
+            normals_vector = np.zeros([2 * ppd + 1])
             abs_sum = 0
-            for j in range(-ppd - 1, ppd + 1, 1):
+            for j in range(-ppd, ppd + 1, 1):
                 pt_x = int(points_on_normal[j + ppd][0])
                 pt_y = int(points_on_normal[j + ppd][1])
-                normals_vector[j + ppd] = img[pt_x, pt_y]
-                abs_sum += math.fabs(normals_vector[j + ppd, 0])
+                normals_vector[j + ppd] = img[pt_y, pt_x]
+                abs_sum += math.fabs(normals_vector[j + ppd])
 
             if abs_sum > 0:
                 normals_vector = normals_vector / abs_sum

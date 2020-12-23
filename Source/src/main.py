@@ -35,7 +35,7 @@ def search_with_model():
         if model_name != '':
             my_db = Database()
             model = my_db.read_model(model_name)
-            result = model.fit_all(image, top_left, size, verbose=True)
+            result = model.fit_all(image, top_left, size, verbose=False)
             model.show_result(image, result)
             cv.waitKey(0)
 
@@ -46,6 +46,6 @@ if __name__ == '__main__':
     my_db = Database()
     model = my_db.read_model('meat')
     image = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/Data/meat_database/F1102flb.bmp")
-    result = model.fit_all(image, (30, 185), (673, 326), verbose=True)
+    result = model.fit_all(image, (30, 185), (663, 326), verbose=True)
     model.show_result(image, result)
     cv.waitKey(0)

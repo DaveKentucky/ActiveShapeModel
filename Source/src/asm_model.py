@@ -6,7 +6,7 @@ import numpy as np
 import cv2 as cv
 from dataclasses import dataclass
 import math
-from scipy.spatial import distance
+# from scipy.spatial import distance
 
 
 class ASMModel (ShapeModel):
@@ -38,7 +38,7 @@ class ASMModel (ShapeModel):
     # feature extractor object for searching points in the image
     feature_extractor: FeatureExtractor
 
-    def __init__(self, points_on_normal=7, search_points_on_normal=10):
+    def __init__(self, points_on_normal=5, search_points_on_normal=3):
         super().__init__()
         self.cov_mat_pyr_inv = list()
         self.mean_vec_pyr = list()
@@ -92,9 +92,11 @@ class ASMModel (ShapeModel):
                         features_matrix[k, ind] = f
                 try:
                     cov_matrix = np.cov(features_matrix, rowvar=False, bias=False)
-                    # invert amtrix with single value decomposition (enables using singualr matrices)
-                    u, s, v = np.linalg.svd(cov_matrix)
-                    cov_matrix = np.dot(v.transpose(), np.dot(np.diag(s ** -1), u.transpose()))
+                    cov_matrix *= 100
+                    # invert matrix with single value decomposition (enables using singular matrices)
+                    # u, s, v = np.linalg.svd(cov_matrix)
+                    # cov_matrix = np.dot(v, np.dot(np.diag(s ** -1), u.transpose()))
+                    cov_matrix = np.linalg.pinv(cov_matrix)
                     # cov_matrix = np.linalg.inv(cov_matrix, cv.DECOMP_SVD)
                 except np.linalg.LinAlgError:
                     print("\nSingular matrix:")
@@ -138,9 +140,6 @@ class ASMModel (ShapeModel):
         :return: result of fitting
         :rtype: ASMFitResult
         """
-        image = self.shape_info.draw_points_on_image(img, self.training_images[0].points, False)
-        cv.imshow("original", image)
-
         x = top_left[0]
         y = top_left[1]
         w = size[0]
@@ -155,6 +154,9 @@ class ASMModel (ShapeModel):
         #     w = img.shape[1] - x
         # if y + size[1] > img.shape[0]:
         #     h = img.shape[0] - y
+
+        image = self.shape_info.draw_points_on_image(img, self.training_images[0].points, False)
+        cv.imshow("original", image)
 
         fit_result = self.fit(img[y:y + h, x:x + w], verbose)
         s2 = SimilarityTransformation()
@@ -233,8 +235,8 @@ class ASMModel (ShapeModel):
 
                         mean = self.mean_vec_pyr[level][i]
                         inv_cov = self.cov_mat_pyr_inv[level][i]
-                        ct = distance.mahalanobis(x, mean, inv_cov)
-                        # ct = cv.Mahalanobis(features[j], self.mean_vec_pyr[level][i], self.cov_mat_pyr_inv[level][i])
+                        # ct = distance.mahalanobis(x, mean, inv_cov)
+                        ct = cv.Mahalanobis(x, mean, inv_cov)
                         # if verbose:
                         #     print(f"Mahalanobis distance: {ct}")
 
@@ -245,8 +247,8 @@ class ASMModel (ShapeModel):
                             best_ep[i, 1] = candidate_points[j][1]
 
                     total_offset += abs(best_i)
-                    if verbose:
-                        cur_search.show(True)
+                    # if verbose:
+                    #     cur_search.show(True)
 
                 # modify results with factor of current pyramid level
                 for i in range(self.n_landmarks):
@@ -261,8 +263,8 @@ class ASMModel (ShapeModel):
 
                 cur_search.shape_vector.set_from_points_array(cur_search.points)
 
-                if verbose:
-                    cur_search.show(True)
+                # if verbose:
+                #     cur_search.show(True)
 
                 # project found shape to PCA model and back to get parameters
                 fit_result = self.find_params_for_shape(cur_search.shape_vector, shape_old, fit_result, level)
@@ -330,7 +332,7 @@ class ASMModel (ShapeModel):
 
             vec_r = cur_trans.inverted_transform(vec)
             p = self.sigma2_pyr[l] / (self.sigma2_pyr[l] + rho2 / (s * s))
-            delta2 = 1 / (1 / self.sigma2_pyr[l] + s * s / rho2)
+            delta2 = 1 / (1 / self.sigma2_pyr[l] + (s * s) / rho2)
             x_from_params.set_from_vector(cv.PCABackProject(cur_params.T,
                                                             self.pca_shape_pyr[l],
                                                             self.eigenvectors_pyr[l],
