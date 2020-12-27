@@ -1,7 +1,6 @@
 from shape_info import ShapeInfo
 
 import numpy as np
-import cv2 as cv
 
 
 class ShapeCreator:
@@ -32,7 +31,6 @@ class ShapeCreator:
 
     def __init__(self, img, window_name):
         """
-
         :param img: image
         :type img: numpy.ndarray
         :type window_name: str
@@ -56,7 +54,12 @@ class ShapeCreator:
                f"{len(self.points)} points and {len(self.contour_start)} contours marked,\n" + string
 
     def get_display_image(self):
+        """
+        Draws current shape on image
 
+        :return: image with current shape
+        :rtype: numpy.ndarray
+        """
         self.info.create_from_shape(self.points, self.contour_start, self.contour_type)
         image = self.info.draw_points_on_image(self.image, np.array(self.points), False)
 

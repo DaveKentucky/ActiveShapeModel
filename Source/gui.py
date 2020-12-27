@@ -331,7 +331,3 @@ def mark_search_area(image):
 
     left, top, right, bottom = sa.get_area_rectangle(select_window)
     return (left, top), (right - left, bottom - top)
-
-
-# if __name__ == '__main__':
-#     create_shape_model()

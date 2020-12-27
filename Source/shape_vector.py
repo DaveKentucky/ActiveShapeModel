@@ -18,6 +18,9 @@ class ShapeVector:
         self.vector = np.array([])
         self.n_points = 0
 
+    def __repr__(self):
+        return f"ShapeVector: vector of {self.n_points} points:\n{self.vector}"
+
     def set_from_points_array(self, p):
         """
         Sets vector with array of points

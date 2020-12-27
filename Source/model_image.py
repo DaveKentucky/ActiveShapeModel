@@ -36,6 +36,17 @@ class ModelImage:
         self.points = None
         self.shape_vector = ShapeVector()
 
+    def __repr__(self):
+        if self.is_loaded:
+            img_info = f"image of shape {self.image.shape} loaded from {self.name}"
+        else:
+            img_info = ""
+        if self.n_points > 0:
+            pts_info = f"{self.n_points} points marked:\n{self.points}"
+        else:
+            pts_info = ""
+        return f"ModelImage: {img_info}, {pts_info}, image's shape vector:\n{self.shape_vector}"
+
     def read_from_file(self, directory, file):
         """
         Read training image from given file

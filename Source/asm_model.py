@@ -52,6 +52,9 @@ class ASMModel (ShapeModel):
                                                   self.points_on_normal,
                                                   self.search_points_on_normal)
 
+    def __repr__(self):
+        return f"ASM " + super().__repr__()
+
     def build_model(self):
         """
         Builds Active Shape Model structure

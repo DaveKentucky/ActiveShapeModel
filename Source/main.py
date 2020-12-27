@@ -1,10 +1,17 @@
 import gui
 from database import Database
+import Data
 
 import cv2 as cv
 
-def create_model():
 
+def create_model():
+    """
+    Creates new ASM model from given files and saves it into database
+
+    :return: created model
+    :rtype: ASMModel
+    """
     model = gui.select_training_data_files()
     if model is not None:     # successfully created shape model
 
@@ -26,9 +33,16 @@ def create_model():
                     my_db.insert_image(image, m_id)
 
         model.build_model()
+        return model
 
 
 def search_with_model():
+    """
+    Fits model to a test image
+
+    :return: result of fitting
+    :rtype: ASMFitResult
+    """
     image, model_name = gui.select_test_data_files()
     if image is not None:
         top_left, size = gui.mark_search_area(image)
@@ -38,14 +52,17 @@ def search_with_model():
             result = model.fit_all(image, top_left, size, verbose=False)
             model.show_result(image, result)
             cv.waitKey(0)
+            return result
+    else:
+        return None
 
 
 if __name__ == '__main__':
 
     # search_with_model()
-    my_db = Database()
-    model = my_db.read_model('meat')
-    image = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/Data/meat_database/F1102flb.bmp")
-    result = model.fit_all(image, (30, 185), (663, 326), verbose=True)
-    model.show_result(image, result)
+    db = Database()
+    mdl = db.read_model('meat')
+    img = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/Data/meat_database/F1101flb.bmp")
+    rt = mdl.fit_all(img, (30, 185), (663, 326), verbose=True)
+    mdl.show_result(img, rt)
     cv.waitKey(0)

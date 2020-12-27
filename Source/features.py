@@ -44,6 +44,11 @@ class FeatureExtractor:
         if shape_info is not None:
             self.shape_info = shape_info
 
+    def __repr__(self):
+        return f"FeatureExtractor: pyramid levels: {self.levels},\n" \
+               f"searched points on one side of normal while creating: {self.points_per_direction},\n" \
+               f"searched points on one side of normal while searching: {self.search_points_per_direction}"
+
     def load_image(self, img):
         """
         Loads the image and creates gaussian and laplacian pyramids of it

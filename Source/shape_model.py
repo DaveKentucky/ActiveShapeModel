@@ -60,7 +60,7 @@ class ShapeModel:
         self.mean_shape = None
 
     def __repr__(self):
-        return f"Model {self.name_tag}, training images: {self.n_images}, landmark points: {self.n_landmarks}"
+        return f"Model '{self.name_tag}', training images: {self.n_images}, landmark points: {self.n_landmarks}"
 
     def build_PCA(self):
         """
@@ -113,7 +113,17 @@ class ShapeModel:
                     image.points = None
 
     def read_train_data(self, directory, model_name, files):
+        """
+        Reads training data from directory
 
+        :param directory: path to the directory with training images
+        :type directory: str
+        :param model_name: name of the model
+        :type model_name: str
+        :param files: list of files with training images
+        :type files: list
+        :return: None
+        """
         self.directory = directory
         self.name_tag = model_name
         self.n_images = 0
@@ -130,7 +140,11 @@ class ShapeModel:
         self.n_images = len(self.training_images)
 
     def align_all_shapes(self):
+        """
+        Translates, scales and rotates all the training images to a common coordinate frame
 
+        :return: None
+        """
         for image in self.training_images:
             image.shape_vector.move_to_origin()
 

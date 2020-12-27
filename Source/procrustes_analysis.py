@@ -152,9 +152,8 @@ def procrustes_distance(reference_shape, shape):
     return dist
 
 
-# example code showing procrustes analysis of simple shapes
 if __name__ == '__main__':
-
+    # example code showing procrustes analysis of simple shapes
     background = np.zeros([400, 400, 3], np.uint8)
     first_shape = np.array([100, 80, 100, 280, 300, 280])
     second_shape = np.array([240, 350, 340, 350, 340, 250])
@@ -166,15 +165,16 @@ if __name__ == '__main__':
     cv.polylines(background, [first_points], True, colors[0], 2)
     cv.polylines(background, [second_points], True, colors[1], 2)
 
-    x, y = get_translation(first_shape)
+    xx, yy = get_translation(first_shape)
 
     new_shape = procrustes_analysis(first_shape, second_shape)
-    new_shape[::2] = new_shape[::2] + x
-    new_shape[1::2] = new_shape[1::2] + y
+    new_shape[::2] = new_shape[::2] + xx
+    new_shape[1::2] = new_shape[1::2] + yy
 
     points = new_shape.reshape((-1, 1, 2))
 
     cv.polylines(background, np.int32([points]), True, colors[2], 2)
 
     cv.imshow("procrustes", background)
-    cv.waitKey(8000)
+    print("Press any key to continue...")
+    cv.waitKey(0)
