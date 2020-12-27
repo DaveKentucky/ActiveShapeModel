@@ -109,8 +109,6 @@ class ShapeModel:
             self.n_landmarks = len(info.point_info)
             for image in self.training_images:
                 image.shape_info = info
-                if image.points is not None:    # clear previously saved points if any
-                    image.points = None
 
     def read_train_data(self, directory, model_name, files):
         """
@@ -138,6 +136,14 @@ class ShapeModel:
                 self.training_images.append(img)
 
         self.n_images = len(self.training_images)
+
+    def set_from_asf(self):
+        read_shape = True
+        for i, image in enumerate(self.training_images):
+            si = image.set_from_asf(self.directory, read_shape)
+            if read_shape:
+                self.set_shape_info(si)
+                read_shape = False
 
     def align_all_shapes(self):
         """

@@ -46,6 +46,7 @@ def make_window_read_data(training):
         ],
         [
             sg.Button("Select this directory", enable_events=True, key="-SELECT BUTTON-"),
+            sg.Check("Use prepared shape", key="-MARKED POINTS-"),
         ]
     ]
 
@@ -186,8 +187,8 @@ def select_training_data_files():
     """
     Creates and operates window where user can select directory with training data for a new model
 
-    :return: ASMModel object with set training images
-    :rtype: ASMModel
+    :return: ASMModel object with set training images and if the landmark points should be read from prepared files
+    :rtype: (ASMModel, bool)
     """
     window = make_window_read_data(True)
     model = None
@@ -239,7 +240,7 @@ def select_training_data_files():
                 break
 
     window.close()
-    return model
+    return model, values["-MARKED POINTS-"]
 
 
 def select_test_data_files():

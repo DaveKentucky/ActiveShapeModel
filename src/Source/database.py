@@ -391,6 +391,7 @@ class Database:
         print("Points read")
         print("\nReading model from database completed!")
 
+        print("Building model...")
         model.build_model()
         return model
 

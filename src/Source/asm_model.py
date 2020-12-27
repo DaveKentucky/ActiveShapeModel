@@ -38,7 +38,7 @@ class ASMModel (ShapeModel):
     # feature extractor object for searching points in the image
     feature_extractor: FeatureExtractor
 
-    def __init__(self, points_on_normal=5, search_points_on_normal=3):
+    def __init__(self, points_on_normal=6, search_points_on_normal=5):
         super().__init__()
         self.cov_mat_pyr_inv = list()
         self.mean_vec_pyr = list()
@@ -321,12 +321,12 @@ class ASMModel (ShapeModel):
         vec_repr = ShapeVector()
 
         cur_trans = fit_result_old.similarity_trans
-        cur_params = np.zeros(self.eigenvalues_pyr[l].shape)
+        cur_params = np.zeros([1, self.eigenvalues_pyr[l].shape[0]])
         for i in range(self.eigenvalues_pyr[l].shape[0]):
             if i < fit_result_old.params.shape[1]:
-                cur_params[i, 0] = fit_result_old.params[0, i]
+                cur_params[0, i] = fit_result_old.params[0, i]
             else:
-                cur_params[i, 0] = 0
+                cur_params[0, i] = 0
 
         ii = 0
         while True:
@@ -336,11 +336,10 @@ class ASMModel (ShapeModel):
             vec_r = cur_trans.inverted_transform(vec)
             p = self.sigma2_pyr[l] / (self.sigma2_pyr[l] + rho2 / (s * s))
             delta2 = 1 / (1 / self.sigma2_pyr[l] + (s * s) / rho2)
-            x_from_params.set_from_vector(cv.PCABackProject(cur_params.T,
+            x_from_params.set_from_vector(cv.PCABackProject(cur_params,
                                                             self.pca_shape_pyr[l],
-                                                            self.eigenvectors_pyr[l],
-                                                            self.eigenvalues_pyr[l])[0])
-            tmp = vec_r.vector.reshape([1, 96])
+                                                            self.eigenvectors_pyr[l])[0])
+            tmp = vec_r.vector.reshape([1, -1])
             tmp_full_params = cv.PCAProject(tmp,
                                             self.pca_full_shape['mean'],
                                             self.pca_full_shape['eigenvectors'],
@@ -352,7 +351,7 @@ class ASMModel (ShapeModel):
             x.set_from_vector(p * vec_repr.vector + (1 - p) * x_from_params.vector)
             x2 = x.vector.dot(x.vector) + (x.vector.shape[0] - 4) * delta2
 
-            tmp = x.vector.reshape([1, 96])
+            tmp = x.vector.reshape([1, -1])
             cur_params = cv.PCAProject(tmp,
                                        self.pca_shape_pyr[l],
                                        self.eigenvectors_pyr[l],
