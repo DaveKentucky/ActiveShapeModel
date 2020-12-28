@@ -197,7 +197,7 @@ class ShapeVector:
         """
         Finds the proper transformation to rescale the shape to given size
 
-        :param size: target size for the shape as tuple: (height, width)
+        :param size: target size for the image as tuple: (height, width)
         :type size: (float, float)
         :param scale_ratio: ratio of the target scale
         :type scale_ratio: float

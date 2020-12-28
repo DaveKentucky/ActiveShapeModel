@@ -66,10 +66,12 @@ if __name__ == '__main__':
     # search_with_model()
 
     db = Database()
-    mdl = db.read_model('face')
-    img = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/src/Data/face_database/01-1m.jpg")
-    rt = mdl.fit_all(img, (190, 185), (230, 240), verbose=True)
-    mdl.show_result(img, rt)
+    mdl = db.read_model('meat')
+    # mdl.show_mean_shape(blank=True)
+    mdl.test_model()
+    # img = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/src/Data/meat_database/F1011flb.bmp")
+    # rt = mdl.fit_all(img, (190, 185), (230, 240), verbose=True)
+    # mdl.show_result(img, rt)
     cv.waitKey(0)
 
     # create_model()

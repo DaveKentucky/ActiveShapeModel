@@ -62,12 +62,59 @@ class ShapeModel:
     def __repr__(self):
         return f"Model '{self.name_tag}', training images: {self.n_images}, landmark points: {self.n_landmarks}"
 
+    def build_model(self):
+        """
+        Builds model structure
+
+        :return: None
+        """
+        print("\nBuilding model...")
+        self.align_all_shapes()
+        self.build_PCA()
+
+    def align_all_shapes(self):
+        """
+        Translates, scales and rotates all the training images to a common coordinate frame
+
+        :return: None
+        """
+        print("Aligning all training images...")
+        for image in self.training_images:
+            image.shape_vector.move_to_origin()
+
+        # set first shape aligned to origin as new mean shape
+        self.training_images[0].shape_vector.scale_to_one()
+        new_mean = ShapeVector()
+        new_mean.set_from_vector(self.training_images[0].shape_vector.vector)
+        origin = ShapeVector()
+        origin.set_from_vector(new_mean.vector)
+
+        while True:
+            current_mean = ShapeVector()
+            current_mean.set_from_vector(new_mean.vector)
+            new_mean = ShapeVector()
+            new_mean.set_from_vector(np.zeros(current_mean.vector.shape, np.float))
+
+            for image in self.training_images:
+                image.shape_vector.align_to(current_mean)
+                new_mean.add_vector(image.shape_vector)
+
+            new_mean.vector /= self.n_images
+            new_mean.align_to(origin)
+            new_mean.scale_to_one()
+
+            if np.linalg.norm(np.subtract(current_mean.vector, new_mean.vector), np.inf) < 1e-10:
+                break
+
+        self.mean_shape = current_mean
+
     def build_PCA(self):
         """
         Builds the model structure with Principal Component Analysis
 
         :return: None
         """
+        print("Performing PCA...")
         length = self.training_images[0].shape_vector.n_points * 2
         pca_data = np.empty((self.n_images, length), np.float)
         for i in range(self.n_images):
@@ -87,15 +134,6 @@ class ShapeModel:
         self.pca_full_shape = {'mean': self.pca_shape,
                                'eigenvalues': self.eigenvalues,
                                'eigenvectors': self.eigenvectors}
-
-    def build_model(self):
-        """
-        Builds model structure
-
-        :return: None
-        """
-        self.align_all_shapes()
-        self.build_PCA()
 
     def set_shape_info(self, info):
         """
@@ -145,41 +183,6 @@ class ShapeModel:
                 self.set_shape_info(si)
                 read_shape = False
 
-    def align_all_shapes(self):
-        """
-        Translates, scales and rotates all the training images to a common coordinate frame
-
-        :return: None
-        """
-        for image in self.training_images:
-            image.shape_vector.move_to_origin()
-
-        # set first shape aligned to origin as new mean shape
-        self.training_images[0].shape_vector.scale_to_one()
-        new_mean = ShapeVector()
-        new_mean.set_from_vector(self.training_images[0].shape_vector.vector)
-        origin = ShapeVector()
-        origin.set_from_vector(new_mean.vector)
-
-        while True:
-            current_mean = ShapeVector()
-            current_mean.set_from_vector(new_mean.vector)
-            new_mean = ShapeVector()
-            new_mean.set_from_vector(np.zeros(current_mean.vector.shape, np.float))
-
-            for image in self.training_images:
-                image.shape_vector.align_to(current_mean)
-                new_mean.add_vector(image.shape_vector)
-
-            new_mean.vector /= self.n_images
-            new_mean.align_to(origin)
-            new_mean.scale_to_one()
-
-            if np.linalg.norm(np.subtract(current_mean.vector, new_mean.vector), np.inf) < 1e-10:
-                break
-
-        self.mean_shape = current_mean
-
     def project_param_to_shape(self, params_vec):
         """
         projects PCA params back to restore the shape and set it to given ShapeVector
@@ -200,6 +203,31 @@ class ShapeModel:
         :rtype: numpy.ndarray
         """
         return cv.PCAProject(shape_vec, self.pca_shape, self.eigenvectors)
+
+    def show_mean_shape(self, blank, image=None):
+        """
+        Draws a mean shape on the image
+
+        :param blank: if the shape should be drawn on a blank canvas
+        :type blank: bool
+        :param image: canvas image
+        :type image: numpy.ndarray
+        :return: None
+        """
+        if blank:
+            img = np.ones(self.training_images[0].image.shape)
+        else:
+            if image is not None:
+                img = image.copy()
+            else:
+                img = self.training_images[0].image.copy()
+
+        st = self.mean_shape.get_shape_transform_fitting_size(img.shape)
+        v = self.mean_shape.restore_to_point_list(st)
+        img = self.shape_info.draw_points_on_image(img, v, draw_directly=True, labels=False)
+        cv.imshow("mean shape", img)
+        print("Press any key to continue...")
+        cv.waitKey()
 
 
 if __name__ == '__main__':

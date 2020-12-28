@@ -206,6 +206,13 @@ class FeatureExtractor:
                     prev_y = ny
                     break
 
+        # make sure points' coordinates do not exceed the image size
+        for pt in output_points:
+            if pt[0] >= self.laplacian_pyramid[level].shape[1]:
+                pt[0] = self.laplacian_pyramid[level].shape[1] - 1
+            if pt[1] >= self.laplacian_pyramid[level].shape[0]:
+                pt[1] = self.laplacian_pyramid[level].shape[0] - 1
+
         return output_points
 
     def get_feature(self, points, point_id, level):

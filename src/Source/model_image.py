@@ -24,7 +24,7 @@ class ModelImage:
     shape_vector: ShapeVector
 
     # image
-    image: np.array
+    image: np.ndarray
 
     # image name
     name: str
@@ -172,12 +172,14 @@ class ModelImage:
         else:
             return None
 
-    def show(self, show):
+    def show(self, show, win_name="image"):
         """
         Returns copy of the image with marked model shapes on it
 
         :param show: if the image should be displayed in a window
         :type show: bool
+        :param win_name: name of the window for displaying an image
+        :type win_name: str
         :return: image copy with model shapes
         :rtype: numpy.ndarray
         """
@@ -190,7 +192,7 @@ class ModelImage:
             img = self.shape_info.draw_points_on_image(img, self.points, False)
 
         if show:
-            cv.imshow("Image", img)
+            cv.imshow(win_name, img)
             print("Press any key to continue...")
             cv.waitKey()
 
@@ -206,6 +208,30 @@ class ModelImage:
         """
         self.n_points = self.shape_vector.n_points
         self.points = self.shape_vector.restore_to_point_list(sim_trans)
+
+    def get_shape_frame(self, offset):
+        """
+        Get default bounding frame of the shape
+
+        :param offset: offset of the frame
+        :type offset: int
+        :return: coordinates of top left point of the frame and its shape as tuple: (width, height)
+        :rtype: ((int, int), (int, int))
+        """
+        top_left, size = self.shape_vector.get_bound_rectangle()
+        x = int(top_left[0] - offset)
+        if x < 0:
+            x = 0
+        y = int(top_left[1] - offset)
+        if y < 0:
+            y = 0
+        w = int(size[0] + 2 * offset)
+        if w > self.image.shape[1]:
+            w = self.image.shape[1]
+        h = int(size[1] + 2 * offset)
+        if h > self.image.shape[0]:
+            h = self.image.shape[0]
+        return (x, y), (w, h)
 
 
 if __name__ == '__main__':

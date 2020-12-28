@@ -314,7 +314,7 @@ class Database:
 
     def read_model(self, model_name):
         """
-        Reads ASM model from database
+        Reads ASM model data from database
 
         :param model_name: name of the model
         :type model_name: str
@@ -391,8 +391,6 @@ class Database:
         print("Points read")
         print("\nReading model from database completed!")
 
-        print("Building model...")
-        model.build_model()
         return model
 
     def read_into_lists(self, col1, col2, table, key_name, key_value):

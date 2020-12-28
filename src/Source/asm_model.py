@@ -6,6 +6,8 @@ import numpy as np
 import cv2 as cv
 from dataclasses import dataclass
 import math
+import random
+from sklearn.metrics import mean_squared_error, r2_score
 # from scipy.spatial import distance
 
 
@@ -70,6 +72,7 @@ class ASMModel (ShapeModel):
 
         :return: None
         """
+        print("Building ASM pyramid structure...")
         self.feature_extractor.shape_info = self.shape_info
 
         feature_extractor_list = list()
@@ -128,6 +131,39 @@ class ASMModel (ShapeModel):
         self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
         self.sigma2_pyr[0] = self.sigma2
 
+    def test_model(self, test_size=0.25):
+        """
+        Tests the model using train-test split of its dataset
+
+        :param test_size: proportion of the dataset to include in the test split (between 0.0 and 1.0), 0.25 on default
+        :type test_size: float
+        :return: None
+        """
+        print("\nSplitting dataset into training and test data...")
+        test_set = list()
+        max_index = self.n_images - 1
+        for i in range(int(test_size * self.n_images)):
+            test_set.append(self.training_images.pop(random.randint(0, max_index)))
+            max_index -= 1
+        self.n_images = len(self.training_images)
+
+        self.build_model()
+        print("\nTesting model performance...")
+        test_results = list()
+        for test_img in test_set:
+            top_left, size = test_img.get_shape_frame(15)
+            test_results.append(self.fit_all(test_img.image, top_left, size, verbose=False))
+
+        print("\nPerformance:")
+        # evaluate each fitting result
+        for i, result in enumerate(test_results):
+            y = test_set[i].points
+            y_t = result.to_point_list()
+            msr = mean_squared_error(y, y_t, squared=False)
+            r2 = r2_score(y, y_t)
+            print(f"Image {i + 1}. coefficient of determination: {r2}")
+            print(f"Image {i + 1}. mean error: {msr}")
+
     def fit_all(self, img, top_left, size, verbose):
         """
         fits all points to given image
@@ -158,9 +194,6 @@ class ASMModel (ShapeModel):
         # if y + size[1] > img.shape[0]:
         #     h = img.shape[0] - y
 
-        image = self.shape_info.draw_points_on_image(img, self.training_images[0].points, False)
-        cv.imshow("original", image)
-
         fit_result = self.fit(img[y:y + h, x:x + w], verbose)
         s2 = SimilarityTransformation()
         s2.x_t = x
@@ -168,6 +201,7 @@ class ASMModel (ShapeModel):
         s2.a = 1
         fit_result.similarity_trans = s2.multiply(fit_result.similarity_trans)
 
+        print("Fitting model completed!")
         return fit_result
 
     def fit(self, img, verbose):
@@ -210,7 +244,7 @@ class ASMModel (ShapeModel):
         self.feature_extractor.load_image(resized_img)
 
         if verbose:
-            cur_search.show(True)
+            cur_search.show(True, "resized image")
 
         for level in range(self.pyramid_level - 1, -1, -1):
             if verbose:
@@ -281,14 +315,14 @@ class ASMModel (ShapeModel):
                 avg_mov = total_offset / self.n_landmarks
                 if verbose:
                     print(f"Iteration: {run + 1}, Average offset: {avg_mov}\n")
-                    cur_search.show(True)
+                    cur_search.show(True, f"iteration {run + 1}")
 
                 if avg_mov < 1.3:
                     break
 
             if verbose:
                 print(f"Finished fitting after {run + 1} iterations, Average offset of last iteration: {avg_mov}\n")
-                cur_search.show(True)
+                cur_search.show(True, f"level {level} final fit")
 
         st_ = SimilarityTransformation()
         st_.a = 1 / ratio
@@ -400,6 +434,12 @@ class ASMFitResult (FitResult):
     asm_model: ASMModel     # Active Shape Model
 
     def to_point_list(self):
+        """
+        Translates the fit result into array of points
+
+        :return: array of result shape points (Nx2 array)
+        :rtype: numpy.ndarray
+        """
         sv = ShapeVector()
         vec = self.asm_model.project_param_to_shape(self.params)
         sv.set_from_vector(vec[0])

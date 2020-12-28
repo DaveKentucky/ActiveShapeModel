@@ -70,7 +70,7 @@ class ShapeInfo:
                     p_info = PointInfo(i, self.contour_is_closed[i], c_from, c_to)
                     self.point_info.append(p_info)
 
-    def draw_points_on_image(self, image, points, draw_directly):
+    def draw_points_on_image(self, image, points, draw_directly, labels=True):
         """
         Puts points and contour lines on given image
 
@@ -80,6 +80,8 @@ class ShapeInfo:
         :type points: numpy.ndarray
         :param draw_directly: if points should be drawn on this image or its copy
         :type draw_directly: bool
+        :param labels: if numbers of points should be drawn on the image
+        :type labels: bool
         :return: image with drawn points and contours
         :rtype: numpy.ndarray
         """
@@ -91,7 +93,8 @@ class ShapeInfo:
         # draw marked points on image
         for i, point in enumerate(points):
             cv.circle(img, (point[0], point[1]), 3, (0, 0, 220), -1)
-            cv.putText(img, str(i + 1), (point[0] + 2, point[1] - 2), cv.QT_FONT_BLACK, 0.7, (0, 0, 220))
+            if labels:
+                cv.putText(img, str(i + 1), (point[0] + 2, point[1] - 2), cv.QT_FONT_BLACK, 0.7, (0, 0, 220))
 
         for i, first in enumerate(self.contour_start_index):  # loop every contour
             for j, point in enumerate(points):  # loop every point
