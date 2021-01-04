@@ -7,6 +7,7 @@ import PySimpleGUI as sg
 import os.path
 import cv2 as cv
 import sys
+import statistics
 
 sg.theme("Dark Grey 13")
 
@@ -73,6 +74,8 @@ def make_window_mark_landmarks(points):
     """
     Creates window layout with instructions about marking landmark points on image
 
+    :param points: number of points that were marked in previous image in this model
+    :type points: int
     :return: window with instructions about marking landmark points
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
@@ -107,6 +110,57 @@ def make_window_mark_landmarks(points):
     ]
 
     return sg.Window("Manual", layout, finalize=True)
+
+
+def make_window_test_model_params():
+    """
+    Creates window layout for performing testing of the model
+
+    :return: window with functionality of setting parameters for testing the model
+    :rtype: PySimpleGUI.PySimpleGUI.Window
+    """
+    layout = [
+        [
+            sg.Text("Distribution of test and train sets"),
+        ],
+        [
+            sg.Slider(range=(1, 100), orientation='h', size=(40, 10), default_value=25, key="-TEST SIZE-")
+        ],
+        [
+            sg.Text("Measures of quality")
+        ],
+        [
+            sg.Check("Coefficient of determination", default=True, key="-R SQUARE-"),
+        ],
+        [
+            sg.Check("Mean error of point's position", default=True, key="-MEAN ERROR-"),
+        ],
+        [
+            sg.T(' ' * 35),
+            sg.Button("Test model", enable_events=True, key="-SUBMIT BUTTON-")
+        ],
+    ]
+
+    return sg.Window("Test params", layout, finalize=True)
+
+
+def make_window_test_results(results):
+    """
+    Creates window layout for showing results of testing the model
+
+    :param results: dictionary with test results
+    :type results: dict[map[str, list]]
+    :return: window with view of test results
+    :rtype: PySimpleGUI.PySimpleGUI.Window 
+    """""
+    layout = []
+    for key in results.keys():
+        mean = round(statistics.mean(results[key]), 2)
+        layout.append([sg.Text(f"Average {key} for all test images: {mean}")])
+    layout.append([sg.T(' ' * 26),
+                   sg.Button("OK", enable_events=True, key="-OK BUTTON-")])
+
+    return sg.Window("Test results", layout, finalize=True)
 
 
 def cv_mouse_click(event, x, y, flags, creator):
@@ -332,3 +386,60 @@ def mark_search_area(image):
 
     left, top, right, bottom = sa.get_area_rectangle(select_window)
     return (left, top), (right - left, bottom - top)
+
+
+def set_model_test_params(images_count):
+    """
+    Creates and operates window where user can set parameters for testing the model
+
+    :param images_count: number of images saved in the model
+    :type images_count: int
+    :return: proportion of the test set size and dictionary of quality measures that should be used
+    :rtype: (int, dict[str, bool])
+    """
+    window = make_window_test_model_params()
+    test_size = 0.0
+    measures = tuple()
+
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-SUBMIT BUTTON-":     # submission was called
+            test_size = float(values["-TEST SIZE-"] / 100)
+            measures = {
+                'R square': values["-R SQUARE-"],
+                'mean error': values["-MEAN ERROR-"]}
+            check = int(test_size * images_count)
+            if check == images_count:
+                sg.PopupOK("Test set size is too large!")
+            elif check > int(images_count / 2):
+                answer = sg.PopupYesNo(
+                    "Test set is larger than training set. Are you sure you want to proceed with given parameters?")
+                if answer == 'Yes':
+                    break
+            else:
+                break
+
+    window.close()
+    return test_size, measures
+
+
+def show_test_results(results):
+    """
+    Creates and operates window where user can see the results of testing the model
+
+    :param results: dictionary with test results
+    :type results: dict[map[str, list]]
+    return: None
+    """
+    window = make_window_test_results(results)
+
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-OK BUTTON-":
+            break
+
+    window.close()

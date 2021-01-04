@@ -1,4 +1,5 @@
 import gui
+from asm_model import ASMModel, ASMFitResult
 from database import Database
 
 import cv2 as cv
@@ -61,14 +62,33 @@ def search_with_model():
         return None
 
 
+def test_model(model):
+    """
+    Tests fitting algorithm performance on given model
+
+    :param model: ASM model with read images set
+    :type model: ASMModel
+    :return:
+    """
+    test_size, measures = gui.set_model_test_params(mdl.n_images)
+    # make sure the window was not closed
+    if test_size > 0.0 and len(measures) > 0:
+        # make sure any measure was selected
+        if True not in measures.values():
+            return
+
+        performance = model.test_model(measures, test_size)
+        gui.show_test_results(performance)
+
+
 if __name__ == '__main__':
 
     # search_with_model()
 
     db = Database()
-    mdl = db.read_model('meat')
+    mdl = db.read_model('face')
+    test_model(mdl)
     # mdl.show_mean_shape(blank=True)
-    mdl.test_model()
     # img = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/src/Data/meat_database/F1011flb.bmp")
     # rt = mdl.fit_all(img, (190, 185), (230, 240), verbose=True)
     # mdl.show_result(img, rt)

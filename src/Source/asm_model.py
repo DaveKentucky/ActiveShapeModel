@@ -40,6 +40,9 @@ class ASMModel (ShapeModel):
     # feature extractor object for searching points in the image
     feature_extractor: FeatureExtractor
 
+    # tuple of quality measures for testing model's performance
+    quality_measures: tuple
+
     def __init__(self, points_on_normal=6, search_points_on_normal=5):
         super().__init__()
         self.cov_mat_pyr_inv = list()
@@ -53,6 +56,7 @@ class ASMModel (ShapeModel):
         self.feature_extractor = FeatureExtractor(self.pyramid_level,
                                                   self.points_on_normal,
                                                   self.search_points_on_normal)
+        self.quality_measures = ('R square', 'mean error')
 
     def __repr__(self):
         return f"ASM " + super().__repr__()
@@ -131,13 +135,16 @@ class ASMModel (ShapeModel):
         self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
         self.sigma2_pyr[0] = self.sigma2
 
-    def test_model(self, test_size=0.25):
+    def test_model(self, quality_measures, test_size=0.25):
         """
         Tests the model using train-test split of its dataset
 
+        :param quality_measures: dictionary of measures of model quality that should be calculated
+        :type quality_measures: dict[str, bool]
         :param test_size: proportion of the dataset to include in the test split (between 0.0 and 1.0), 0.25 on default
         :type test_size: float
-        :return: None
+        :return: dictionary with lists of every selected measure results
+        :rtype: dict[map[str, list]]
         """
         print("\nSplitting dataset into training and test data...")
         test_set = list()
@@ -154,15 +161,26 @@ class ASMModel (ShapeModel):
             top_left, size = test_img.get_shape_frame(15)
             test_results.append(self.fit_all(test_img.image, top_left, size, verbose=False))
 
+        results = dict()
+        for key in quality_measures.keys():
+            if quality_measures[key]:
+                results[key] = []
+
         print("\nPerformance:")
         # evaluate each fitting result
         for i, result in enumerate(test_results):
             y = test_set[i].points
             y_t = result.to_point_list()
-            msr = mean_squared_error(y, y_t, squared=False)
-            r2 = r2_score(y, y_t)
-            print(f"Image {i + 1}. coefficient of determination: {r2}")
-            print(f"Image {i + 1}. mean error: {msr}")
+            if quality_measures['R square']:
+                r2 = r2_score(y, y_t)
+                results['R square'].append(round(r2, 2))
+                print(f"Image {i + 1}. coefficient of determination: {r2}")
+            if quality_measures['mean error']:
+                msr = mean_squared_error(y, y_t, squared=False)
+                results['mean error'].append(round(msr, 2))
+                print(f"Image {i + 1}. mean error: {msr}")
+
+        return results
 
     def fit_all(self, img, top_left, size, verbose):
         """
