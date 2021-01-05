@@ -421,6 +421,32 @@ class Database:
 
         return list1, list2
 
+    def get_all_models_names(self):
+        """
+        Reads names of all the models in the database
+
+        :return: list of tuples with models' names and number of images saved in the model
+        :rtype: list[tuple[str, int]]
+        """
+        query = "select model_name from models where model_id is not null"
+        self.cursor.execute(query)  # read all models' names
+        result = self.cursor.fetchall()
+        models_list = list()
+        for r in result:
+            models_list.append(r[0])
+
+        for i, name in enumerate(models_list):
+            query = f"select model_id from models where model_name = '{name}'"
+            self.cursor.execute(query)  # read id of every model
+            result = self.cursor.fetchone()
+            query = f"select count(*) from images where model_id = {result[0]}"
+            self.cursor.execute(query)  # read number of points of every model
+            result = self.cursor.fetchone()
+            models_list[i] = (models_list[i], result[0])
+            self.cursor.reset()
+
+        return models_list
+
 
 if __name__ == '__main__':
 

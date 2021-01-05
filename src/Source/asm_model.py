@@ -40,9 +40,6 @@ class ASMModel (ShapeModel):
     # feature extractor object for searching points in the image
     feature_extractor: FeatureExtractor
 
-    # tuple of quality measures for testing model's performance
-    quality_measures: tuple
-
     def __init__(self, points_on_normal=6, search_points_on_normal=5):
         super().__init__()
         self.cov_mat_pyr_inv = list()
@@ -56,7 +53,6 @@ class ASMModel (ShapeModel):
         self.feature_extractor = FeatureExtractor(self.pyramid_level,
                                                   self.points_on_normal,
                                                   self.search_points_on_normal)
-        self.quality_measures = ('R square', 'mean error')
 
     def __repr__(self):
         return f"ASM " + super().__repr__()
@@ -123,17 +119,19 @@ class ASMModel (ShapeModel):
 
         self.sigma2_pyr = [0., 0., 0.]
         cur_sigma2 = np.sum(self.pca_full_shape['eigenvalues'])
+        for i in range(len(self.sigma2_pyr)):
+            self.sigma2_pyr[i] = cur_sigma2 / (self.n_landmarks * 2 - 4)
 
-        for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
-            if i < 5:
-                cur_sigma2 -= eigenvalue[0]
-        self.sigma2_pyr[2] = cur_sigma2 / (self.n_landmarks * 2 - 4)
-
-        for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
-            if 5 <= i < 20:
-                cur_sigma2 -= eigenvalue[0]
-        self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
-        self.sigma2_pyr[0] = self.sigma2
+        # for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
+        #     if i < 5:
+        #         cur_sigma2 -= eigenvalue[0]
+        # self.sigma2_pyr[2] = cur_sigma2 / (self.n_landmarks * 2 - 4)
+        #
+        # for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
+        #     if 5 <= i < 20:
+        #         cur_sigma2 -= eigenvalue[0]
+        # self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
+        # self.sigma2_pyr[0] = self.sigma2
 
     def test_model(self, quality_measures, test_size=0.25):
         """
@@ -302,7 +300,7 @@ class ASMModel (ShapeModel):
                             best_ep[i, 1] = candidate_points[j][1]
 
                     total_offset += abs(best_i)
-                    # if verbose:
+                    # if :
                     #     cur_search.show(True)
 
                 # modify results with factor of current pyramid level
@@ -348,7 +346,7 @@ class ASMModel (ShapeModel):
 
         return fit_result
 
-    def find_params_for_shape(self, vec, vec_old, fit_result_old, l):
+    def find_params_for_shape(self, vec, vec_old, fit_result_old, level):
         """
         Finds b parameters of the model for given shape
 
@@ -358,8 +356,8 @@ class ASMModel (ShapeModel):
         :type vec_old: ShapeVector
         :param fit_result_old: result object of the fitting
         :type fit_result_old: ASMFitResult
-        :param l: level of the pyramid
-        :type l: int
+        :param level: level of the pyramid
+        :type level: int
         :return: fitting result with found parameters set
         :rtype: ASMFitResult
         """
@@ -367,14 +365,14 @@ class ASMModel (ShapeModel):
         vec_t = ShapeVector()
         vec_t.set_from_vector(vec_old.vector)
         vec_t.subtract_vector(vec)
-        rho2 = c[l] * vec_t.vector.dot(vec_t.vector)
+        rho2 = c[level] * vec_t.vector.dot(vec_t.vector)
         x = ShapeVector()
         x_from_params = ShapeVector()
         vec_repr = ShapeVector()
 
         cur_trans = fit_result_old.similarity_trans
-        cur_params = np.zeros([1, self.eigenvalues_pyr[l].shape[0]])
-        for i in range(self.eigenvalues_pyr[l].shape[0]):
+        cur_params = np.zeros([1, self.eigenvalues_pyr[level].shape[0]])
+        for i in range(self.eigenvalues_pyr[level].shape[0]):
             if i < fit_result_old.params.shape[1]:
                 cur_params[0, i] = fit_result_old.params[0, i]
             else:
@@ -386,11 +384,11 @@ class ASMModel (ShapeModel):
             last_params = cur_params.copy()
 
             vec_r = cur_trans.inverted_transform(vec)
-            p = self.sigma2_pyr[l] / (self.sigma2_pyr[l] + rho2 / (s * s))
-            delta2 = 1 / (1 / self.sigma2_pyr[l] + (s * s) / rho2)
+            p = self.sigma2_pyr[level] / (self.sigma2_pyr[level] + rho2 / (s * s))
+            delta2 = 1 / (1 / self.sigma2_pyr[level] + (s * s) / rho2)
             x_from_params.set_from_vector(cv.PCABackProject(cur_params,
-                                                            self.pca_shape_pyr[l],
-                                                            self.eigenvectors_pyr[l])[0])
+                                                            self.pca_shape_pyr[level],
+                                                            self.eigenvectors_pyr[level])[0])
             tmp = vec_r.vector.reshape([1, -1])
             tmp_full_params = cv.PCAProject(tmp,
                                             self.pca_full_shape['mean'],
@@ -405,11 +403,11 @@ class ASMModel (ShapeModel):
 
             tmp = x.vector.reshape([1, -1])
             cur_params = cv.PCAProject(tmp,
-                                       self.pca_shape_pyr[l],
-                                       self.eigenvectors_pyr[l],
-                                       self.eigenvalues_pyr[l])
-            for i in range(self.eigenvalues_pyr[l].shape[0]):
-                cur_params[0, i] *= (self.eigenvalues[i, 0] / self.eigenvalues[i, 0] + self.sigma2_pyr[l])
+                                       self.pca_shape_pyr[level],
+                                       self.eigenvectors_pyr[level],
+                                       self.eigenvalues_pyr[level])
+            for i in range(self.eigenvalues_pyr[level].shape[0]):
+                cur_params[0, i] *= (self.eigenvalues[i, 0] / self.eigenvalues[i, 0] + self.sigma2_pyr[level])
 
             n_p = x.n_points
             cur_trans.a = vec.vector.dot(x.vector) / x2

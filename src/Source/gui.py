@@ -12,6 +12,31 @@ import statistics
 sg.theme("Dark Grey 13")
 
 
+def make_window_main_menu():
+    """
+    Creates window with main menu of the application
+
+    :return: main menu window
+    :rtype: PySimpleGUI.PySimpleGUI.Window
+    """
+    layout = [
+        [
+            sg.Button("Create model", enable_events=True, key="-CREATE-")
+        ],
+        [
+            sg.Button("Search", enable_events=True, key="-SEARCH-")
+        ],
+        [
+            sg.Button("Test model", enable_events=True, key="-TEST-")
+        ],
+        [
+            sg.Button("Exit", enable_events=True, key="-EXIT-")
+        ]
+    ]
+
+    return sg.Window("Main menu", layout, finalize=True)
+
+
 def make_window_read_data(training):
     """
     Creates window with functionality of reading data for model
@@ -28,6 +53,9 @@ def make_window_read_data(training):
 
     # layout of the left column with directories and files
     files_column = [
+        [
+            sg.Button("Back", enable_events=True, key="-BACK-")
+        ],
         [
             sg.Text(f"Select directory containing {data_type} data for the model")
         ],
@@ -47,7 +75,7 @@ def make_window_read_data(training):
         ],
         [
             sg.Button("Select this directory", enable_events=True, key="-SELECT BUTTON-"),
-            sg.Check("Use prepared shape", key="-MARKED POINTS-"),
+            sg.Check("Use shape from file", key="-MARKED POINTS-"),
         ]
     ]
 
@@ -112,7 +140,7 @@ def make_window_mark_landmarks(points):
     return sg.Window("Manual", layout, finalize=True)
 
 
-def make_window_test_model_params():
+def make_window_test_model_params(models_list):
     """
     Creates window layout for performing testing of the model
 
@@ -120,6 +148,12 @@ def make_window_test_model_params():
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
     layout = [
+        [
+            sg.Button("Back", enable_events=True, key="-BACK-")
+        ],
+        [
+            sg.DropDown(models_list, size=(20, 10), enable_events=True, key="-MODEL-")
+        ],
         [
             sg.Text("Distribution of test and train sets"),
         ],
@@ -186,6 +220,33 @@ def cv_mouse_click(event, x, y, flags, creator):
     cv.imshow(creator.window_name, creator.get_display_image())
 
 
+def main_menu():
+    """
+    Creates and operates main menu window of the application
+
+    :return: code of option selected in the menu
+    :rtype int
+    """
+    response = -1
+    window = make_window_main_menu()
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED or event == "-EXIT-":
+            break
+        elif event == "-CREATE-":
+            response = 1    # code for creating a new model
+            break
+        elif event == "-SEARCH-":
+            response = 2    # code for searching on an image with existing model
+            break
+        elif event == "-TEST-":
+            response = 3    # code for testing an existing model
+            break
+
+    window.close()
+    return response
+
+
 def mark_landmark_points(m_img, h_img):
     """
     Creates and operates window where user can draw a shape on image
@@ -241,9 +302,11 @@ def select_training_data_files():
     """
     Creates and operates window where user can select directory with training data for a new model
 
-    :return: ASMModel object with set training images and if the landmark points should be read from prepared files
-    :rtype: (ASMModel, bool)
+    :return: response code, ASMModel object with set training images and if the landmark points should be read
+            from prepared files
+    :rtype: (int, ASMModel, bool)
     """
+    response = -1
     window = make_window_read_data(True)
     model = None
     files = None
@@ -251,6 +314,9 @@ def select_training_data_files():
     while True:
         event, values = window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-BACK-":
+            response = 0
             break
         elif event == "-FOLDER-":     # folder name was filled in
             folder = values["-FOLDER-"]
@@ -291,13 +357,21 @@ def select_training_data_files():
                 model = ASMModel()
                 model_name = values["-MODEL NAME-"]
                 model.read_train_data(folder, model_name, files)
+                response = 1
                 break
 
     window.close()
-    return model, values["-MARKED POINTS-"]
+    return response, model, values["-MARKED POINTS-"]
 
 
-def select_test_data_files():
+def select_search_data_files():
+    """
+    Creates and operates window where user can select an image to search with the model
+
+    :return: response code, image for searching and name of the model that should be used
+    :rtype: (int, numpy.ndarray, str)
+    """
+    response = -1
     window = make_window_read_data(False)
     img = None
     files = None
@@ -306,6 +380,9 @@ def select_test_data_files():
     while True:
         event, values = window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-BACK-":
+            response = 0
             break
         elif event == "-FOLDER-":     # folder name was filled in
             folder = values["-FOLDER-"]
@@ -342,10 +419,11 @@ def select_test_data_files():
                 sg.PopupOK("Select an image for test data!")
             else:
                 model_name = values["-MODEL NAME-"]
+                response = 2
                 break
 
     window.close()
-    return img, model_name
+    return response, img, model_name
 
 
 def mark_search_area(image):
@@ -388,16 +466,22 @@ def mark_search_area(image):
     return (left, top), (right - left, bottom - top)
 
 
-def set_model_test_params(images_count):
+def set_model_test_params(models_list):
     """
     Creates and operates window where user can set parameters for testing the model
 
-    :param images_count: number of images saved in the model
-    :type images_count: int
-    :return: proportion of the test set size and dictionary of quality measures that should be used
-    :rtype: (int, dict[str, bool])
+    :param models_list: list of tuples with models' names and number of images in the model
+    :type: list[tuple[str, int]]
+    :return: response code, tested model's name,
+            proportion of the test set size and dictionary of quality measures that should be used
+    :rtype: (int, str, int, dict[str, bool])
     """
-    window = make_window_test_model_params()
+    response = -1
+    models_names = list()
+    for elem in models_list:
+        models_names.append(elem[0])
+    window = make_window_test_model_params(models_names)
+    model = ''
     test_size = 0.0
     measures = tuple()
 
@@ -405,24 +489,35 @@ def set_model_test_params(images_count):
         event, values = window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
+        if event == "-BACK-":
+            response = 0
+            break
+        elif event == "-MODEL-":
+            model = values["-MODEL-"]
+            images_count = models_list[models_names.index(model)][1]
         elif event == "-SUBMIT BUTTON-":     # submission was called
-            test_size = float(values["-TEST SIZE-"] / 100)
-            measures = {
-                'R square': values["-R SQUARE-"],
-                'mean error': values["-MEAN ERROR-"]}
-            check = int(test_size * images_count)
-            if check == images_count:
-                sg.PopupOK("Test set size is too large!")
-            elif check > int(images_count / 2):
-                answer = sg.PopupYesNo(
-                    "Test set is larger than training set. Are you sure you want to proceed with given parameters?")
-                if answer == 'Yes':
-                    break
+            if values["-MODEL-"] == '':     # no model was selected
+                sg.PopupOK("You have to select a model first!")
             else:
-                break
+                test_size = float(values["-TEST SIZE-"] / 100)
+                measures = {
+                    'R square': values["-R SQUARE-"],
+                    'mean error': values["-MEAN ERROR-"]}
+                check = int(test_size * images_count)
+                if check == images_count:
+                    sg.PopupOK("Test set size is too large!")
+                elif check > int(images_count / 2):
+                    answer = sg.PopupYesNo(
+                        "Test set is larger than training set. Are you sure you want to proceed with given parameters?")
+                    if answer == 'Yes':
+                        response = 3
+                        break
+                else:
+                    response = 3
+                    break
 
     window.close()
-    return test_size, measures
+    return response, model, test_size, measures
 
 
 def show_test_results(results):

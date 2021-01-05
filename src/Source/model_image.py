@@ -189,12 +189,13 @@ class ModelImage:
             img = self.image.copy()
 
         if self.shape_info is not None:
-            img = self.shape_info.draw_points_on_image(img, self.points, False)
+            img = self.shape_info.draw_points_on_image(img, self.points, draw_directly=False, labels=False)
 
         if show:
             cv.imshow(win_name, img)
             print("Press any key to continue...")
             cv.waitKey()
+            # cv.destroyWindow(win_name)
 
         return img
 
