@@ -7,7 +7,7 @@ import cv2 as cv
 from dataclasses import dataclass
 import math
 import random
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, explained_variance_score
 # from scipy.spatial import distance
 
 
@@ -155,7 +155,8 @@ class ASMModel (ShapeModel):
         self.build_model()
         print("\nTesting model performance...")
         test_results = list()
-        for test_img in test_set:
+        for i, test_img in enumerate(test_set):
+            print(f"Fitting image {i + 1} from test set...")
             top_left, size = test_img.get_shape_frame(15)
             test_results.append(self.fit_all(test_img.image, top_left, size, verbose=False))
 
@@ -177,6 +178,10 @@ class ASMModel (ShapeModel):
                 msr = mean_squared_error(y, y_t, squared=False)
                 results['mean error'].append(round(msr, 2))
                 print(f"Image {i + 1}. mean error: {msr}")
+            if quality_measures['explained variance']:
+                ev = explained_variance_score(y, y_t)
+                results['explained variance'].append(round(ev, 2))
+                print(f"Image {i + 1}. explained variance: {ev}")
 
         return results
 

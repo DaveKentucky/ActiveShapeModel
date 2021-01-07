@@ -19,22 +19,26 @@ def make_window_main_menu():
     :return: main menu window
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
+    button_size = (45, 3)
     layout = [
         [
-            sg.Button("Create model", enable_events=True, key="-CREATE-")
+            sg.Button("Create model", tooltip="Create new model manually or from prepared files",
+                      size=button_size, enable_events=True, key="-CREATE-")
         ],
         [
-            sg.Button("Search", enable_events=True, key="-SEARCH-")
+            sg.Button("Search", tooltip="Fit existing model to chosen image",
+                      size=button_size, enable_events=True, key="-SEARCH-")
         ],
         [
-            sg.Button("Test model", enable_events=True, key="-TEST-")
+            sg.Button("Test model", tooltip="Split data into training and testing sets and test the performance",
+                      size=button_size, enable_events=True, key="-TEST-")
         ],
         [
-            sg.Button("Exit", enable_events=True, key="-EXIT-")
+            sg.Button("Exit", size=button_size, enable_events=True, key="-EXIT-")
         ]
     ]
 
-    return sg.Window("Main menu", layout, finalize=True)
+    return sg.Window("Main menu", layout, finalize=True, size=(400, 260))
 
 
 def make_window_read_data(training):
@@ -54,7 +58,7 @@ def make_window_read_data(training):
     # layout of the left column with directories and files
     files_column = [
         [
-            sg.Button("Back", enable_events=True, key="-BACK-")
+            sg.Button("Back", focus=False, enable_events=True, key="-BACK-")
         ],
         [
             sg.Text(f"Select directory containing {data_type} data for the model")
@@ -74,8 +78,9 @@ def make_window_read_data(training):
             sg.In(size=(15, 1), enable_events=False, key="-MODEL NAME-"),
         ],
         [
-            sg.Button("Select this directory", enable_events=True, key="-SELECT BUTTON-"),
-            sg.Check("Use shape from file", key="-MARKED POINTS-"),
+            sg.Button("Select this directory", focus=True, enable_events=True, key="-SELECT BUTTON-"),
+            sg.Check("Shape from file", tooltip="Use shape model information from predefined file if available",
+                     key="-MARKED POINTS-"),
         ]
     ]
 
@@ -152,13 +157,31 @@ def make_window_test_model_params(models_list):
             sg.Button("Back", enable_events=True, key="-BACK-")
         ],
         [
-            sg.DropDown(models_list, size=(20, 10), enable_events=True, key="-MODEL-")
+            sg.T(' ' * 21),
+            sg.Text("Model")
         ],
         [
+            sg.DropDown(models_list, tooltip="Select model to test", size=(35, 10), enable_events=True, key="-MODEL-")
+        ],
+        [
+            sg.T(' ')
+        ],
+        [
+            sg.T(' ' * 3),
             sg.Text("Distribution of test and train sets"),
         ],
         [
-            sg.Slider(range=(1, 100), orientation='h', size=(40, 10), default_value=25, key="-TEST SIZE-")
+            sg.Slider(range=(1, 100), orientation='h', size=(30, 10), default_value=25,
+                      enable_events=True,  key="-TEST SIZE-")
+        ],
+        [
+            sg.Text("Test set size:"),
+            sg.Text("000", enable_events=True, key="-TEST-"),
+            sg.Text("Training set size:"),
+            sg.Text("000", enable_events=True, key="-TRAINING-"),
+        ],
+        [
+            sg.T(' ')
         ],
         [
             sg.Text("Measures of quality")
@@ -170,7 +193,13 @@ def make_window_test_model_params(models_list):
             sg.Check("Mean error of point's position", default=True, key="-MEAN ERROR-"),
         ],
         [
-            sg.T(' ' * 35),
+            sg.Check("Explained variance", default=True, key="-EXPLAINED VARIANCE-"),
+        ],
+        [
+            sg.T(' ')
+        ],
+        [
+            sg.T(' ' * 20),
             sg.Button("Test model", enable_events=True, key="-SUBMIT BUTTON-")
         ],
     ]
@@ -466,6 +495,26 @@ def mark_search_area(image):
     return (left, top), (right - left, bottom - top)
 
 
+def update_test_training_sizes(window, slider_read, n_images):
+    """
+    Updates count of training and test images in window
+
+    :param window: window for setting testing parameters
+    :type: PySimpleGUI.PySimpleGUI.Window
+    :param slider_read: read value of training/test split slider
+    :type slider_read: int
+    :param n_images: number of images in the model
+    :type n_images: int
+    :return: None
+    """
+    test_size = float(slider_read / 100)
+    test = int(test_size * n_images)
+    (window["-TEST-"]).update(str(test))
+    training = n_images - test
+    (window["-TRAINING-"]).update(str(training))
+    window.refresh()
+
+
 def set_model_test_params(models_list):
     """
     Creates and operates window where user can set parameters for testing the model
@@ -484,6 +533,7 @@ def set_model_test_params(models_list):
     model = ''
     test_size = 0.0
     measures = tuple()
+    images_count = 0
 
     while True:
         event, values = window.read()
@@ -495,6 +545,9 @@ def set_model_test_params(models_list):
         elif event == "-MODEL-":
             model = values["-MODEL-"]
             images_count = models_list[models_names.index(model)][1]
+            update_test_training_sizes(window, values["-TEST SIZE-"], images_count)
+        elif event == "-TEST SIZE-":
+            update_test_training_sizes(window, values["-TEST SIZE-"], images_count)
         elif event == "-SUBMIT BUTTON-":     # submission was called
             if values["-MODEL-"] == '':     # no model was selected
                 sg.PopupOK("You have to select a model first!")
@@ -502,7 +555,8 @@ def set_model_test_params(models_list):
                 test_size = float(values["-TEST SIZE-"] / 100)
                 measures = {
                     'R square': values["-R SQUARE-"],
-                    'mean error': values["-MEAN ERROR-"]}
+                    'mean error': values["-MEAN ERROR-"],
+                    'explained variance': values["-EXPLAINED VARIANCE-"]}
                 check = int(test_size * images_count)
                 if check == images_count:
                     sg.PopupOK("Test set size is too large!")
