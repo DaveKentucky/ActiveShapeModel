@@ -121,7 +121,8 @@ class ShapeModel:
             for j in range(length):
                 pca_data[i, j] = self.training_images[i].shape_vector.vector[j]
 
-        self.pca_shape, self.eigenvectors, self.eigenvalues = cv.PCACompute2(pca_data, mean=None, maxComponents=10)
+        self.pca_shape, self.eigenvectors, self.eigenvalues = cv.PCACompute2(pca_data, mean=None,
+                                                                             maxComponents=int(self.n_landmarks / 4))
 
         eigenvalues_sum = np.sum(self.eigenvalues)
         s_cur = 0
@@ -204,18 +205,21 @@ class ShapeModel:
         """
         return cv.PCAProject(shape_vec, self.pca_shape, self.eigenvectors)
 
-    def show_mean_shape(self, blank, image=None):
+    def get_mean_shape(self, view, blank, image=None):
         """
         Draws a mean shape on the image
 
+        :param view: if the mean shape should be viewed
+        :type view: bool
         :param blank: if the shape should be drawn on a blank canvas
         :type blank: bool
         :param image: canvas image
         :type image: numpy.ndarray
-        :return: None
+        :return: image with mean shape drawn
+        :rtype np.ndarray
         """
         if blank:
-            img = np.ones(self.training_images[0].image.shape)
+            img = np.ones_like(self.training_images[0].image)
         else:
             if image is not None:
                 img = image.copy()
@@ -225,9 +229,13 @@ class ShapeModel:
         st = self.mean_shape.get_shape_transform_fitting_size(img.shape)
         v = self.mean_shape.restore_to_point_list(st)
         img = self.shape_info.draw_points_on_image(img, v, draw_directly=True, labels=False)
-        cv.imshow("mean shape", img)
-        print("Press any key to continue...")
-        cv.waitKey()
+
+        if view:
+            cv.imshow("mean shape", img)
+            print("Press any key to continue...")
+            cv.waitKey()
+
+        return img
 
 
 if __name__ == '__main__':

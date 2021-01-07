@@ -88,6 +88,24 @@ def test_model():
         return 0
 
 
+def show_model():
+    """
+    Shows visualisation of a model and enables tweaking its parameters manually
+
+    :return: response code
+    :rtype: int
+    """
+    my_db = Database()
+    models_names = my_db.get_all_models_names()
+    response, model_name = gui.show_model(models_names)
+    if response <= 0:
+        return response
+
+    model = my_db.read_model(model_name)
+    model.build_model()
+    return gui.visualise_model(model)
+
+
 if __name__ == '__main__':
 
     res = gui.main_menu()
@@ -102,12 +120,9 @@ if __name__ == '__main__':
             res = search_with_model()
         elif res == 3:
             res = test_model()
+        elif res == 4:
+            res = show_model()
 
-    # search_with_model()
-
-    # db = Database()
-    # db.get_all_models_names()
-    # mdl = db.read_model('face')
     # search_with_model()
     # test_model(mdl)
     # mdl.show_mean_shape(blank=True)

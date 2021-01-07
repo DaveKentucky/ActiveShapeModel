@@ -133,6 +133,37 @@ class ASMModel (ShapeModel):
         # self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
         # self.sigma2_pyr[0] = self.sigma2
 
+    def get_shape(self, view, save_to_file, filename="shape.jpg", params=None):
+        """
+        Draws shape with parameters if given or the mean shape of the model
+
+        :param view: if the mean shape should be viewed
+        :type view: bool
+        :param save_to_file: if the result shape should be save to file as new image
+        :type save_to_file: bool
+        :param filename: name of the target file for the image
+        :type filename: str
+        :param params: parameters of the model to transform it
+        :type params: np.ndarray
+        :return: image with the mean shape
+        :rtype: np.ndarray
+        """
+        canvas = np.ones_like(self.training_images[0].image)
+        if params is None:
+            img = super().get_mean_shape(view=False, blank=True)
+        else:
+            st = self.mean_shape.get_shape_transform_fitting_size(canvas.shape)
+            fit_res = ASMFitResult(params, st, self)
+            points = fit_res.to_point_list()
+            img = self.shape_info.draw_points_on_image(canvas, points, False, False)
+
+        if save_to_file:
+            cv.imwrite(filename, img)
+        if view:
+            cv.imshow("mean shape", img)
+
+        return img
+
     def test_model(self, quality_measures, test_size=0.25):
         """
         Tests the model using train-test split of its dataset
@@ -438,7 +469,8 @@ class ASMModel (ShapeModel):
         :type img: numpy.ndarray
         :param result: ASM model fitting result
         :type result: ASMFitResult
-        :return: None
+        :return: image with drawn result shape
+        :rtype: np.ndarray
         """
         if len(img.shape) != 3:
             image = cv.cvtColor(img, cv.COLOR_GRAY2RGB)
@@ -446,8 +478,10 @@ class ASMModel (ShapeModel):
             image = img.copy()
 
         points = result.to_point_list()
-        image = self.shape_info.draw_points_on_image(image, points, False)
+        image = self.shape_info.draw_points_on_image(image, points, False, False)
         cv.imshow("result image", image)
+
+        return image
 
 
 @dataclass

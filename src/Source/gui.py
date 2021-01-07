@@ -8,6 +8,7 @@ import os.path
 import cv2 as cv
 import sys
 import statistics
+import numpy as np
 
 sg.theme("Dark Grey 13")
 
@@ -34,11 +35,15 @@ def make_window_main_menu():
                       size=button_size, enable_events=True, key="-TEST-")
         ],
         [
+            sg.Button("Show model", tooltip="Visualise a model and tweak its parameters manually",
+                      size=button_size, enable_events=True, key="-SHOW-")
+        ],
+        [
             sg.Button("Exit", size=button_size, enable_events=True, key="-EXIT-")
         ]
     ]
 
-    return sg.Window("Main menu", layout, finalize=True, size=(400, 260))
+    return sg.Window("Main menu", layout, finalize=True, size=(400, 330))
 
 
 def make_window_read_data(training):
@@ -149,6 +154,8 @@ def make_window_test_model_params(models_list):
     """
     Creates window layout for performing testing of the model
 
+    :param models_list: list of all created models' names
+    :type models_list: list[str]
     :return: window with functionality of setting parameters for testing the model
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
@@ -226,6 +233,81 @@ def make_window_test_results(results):
     return sg.Window("Test results", layout, finalize=True)
 
 
+def make_window_show_model(models_list):
+    """
+    Creates window layout for selecting model to visualise
+
+    :param models_list: list of all created models' names
+    :type models_list: list[str]
+    :return: window with functionality of selecting model
+    :rtype: PySimpleGUI.PySimpleGUI.Window
+    """
+    layout = [
+        [
+            sg.Button("Back", enable_events=True, key="-BACK-")
+        ],
+        [
+            sg.T(' ' * 16),
+            sg.Text("Model")
+        ],
+        [
+            sg.DropDown(models_list, tooltip="Select model to show", size=(25, 10), enable_events=True, key="-MODEL-")
+        ],
+        [
+            sg.T(' ' * 16),
+            sg.Button("Show", enable_events=True, key="-SHOW-")
+        ]
+    ]
+
+    return sg.Window("Choose model", layout, finalize=True)
+
+
+def make_window_visualise_model(model):
+    """
+    Creates window layout for visualising given model shape with its parameters
+
+    :param model: selected built model
+    :type model: ASMModel
+    :return: window with functionality of showing model shape
+    :rtype: PySimpleGUI.PySimpleGUI.Window
+    """
+    params_column = [
+        [
+            sg.Button("Back", enable_events=True, key="-BACK-")
+        ],
+        [
+            sg.T(' ' * 11),
+            sg.Text("Parameters")
+        ]
+    ]
+
+    for i in range(model.eigenvalues.shape[0]):
+        params_column.append(
+            [
+                sg.Slider(range=(1, 100), orientation='h', size=(20, 10), default_value=50,
+                          enable_events=True, key=f"-PARAM{i}-")
+            ]
+        )
+
+    # layout of the right column with image overview
+    image_column = [
+        [sg.Text("Model shape")],
+        [sg.Text(model.name_tag)],
+        [sg.Image(filename="", key="-IMAGE-")],
+    ]
+
+    # layout of whole window
+    layout = [
+        [
+            sg.Column(params_column),
+            sg.VSeparator(),
+            sg.Column(image_column),
+        ]
+    ]
+
+    return sg.Window("Visualisation", layout, finalize=True, location=(100, 5))
+
+
 def cv_mouse_click(event, x, y, flags, creator):
     """
     Resolve mouse input on the image
@@ -270,6 +352,9 @@ def main_menu():
             break
         elif event == "-TEST-":
             response = 3    # code for testing an existing model
+            break
+        elif event == "-SHOW-":
+            response = 4    # code for showing a model
             break
 
     window.close()
@@ -539,7 +624,7 @@ def set_model_test_params(models_list):
         event, values = window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
-        if event == "-BACK-":
+        elif event == "-BACK-":
             response = 0
             break
         elif event == "-MODEL-":
@@ -592,3 +677,76 @@ def show_test_results(results):
             break
 
     window.close()
+
+
+def show_model(models_list):
+    """
+    Creates and operates window where user can choose model to visualise
+
+    :param models_list: list of tuples with models' names and number of images in the model
+    :type: list[tuple[str, int]]
+    :return: response code, selected model's name
+    :rtype: (int, str)
+    """
+    response = -1
+    models_names = list()
+    for elem in models_list:
+        models_names.append(elem[0])
+    window = make_window_show_model(models_names)
+    model = ''
+
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-BACK-":
+            response = 0
+            break
+        elif event == "-MODEL-":
+            model = values["-MODEL-"]
+        elif event == "-SHOW-":
+            if values["-MODEL-"] == '':     # no model was selected
+                sg.PopupOK("You have to select a model first!")
+            else:
+                response = 4
+                break
+
+    window.close()
+    return response, model
+
+
+def visualise_model(model):
+    """
+    Creates and operates window where user can visualise model shape and tweak its parameters
+
+    :param model: selected model to visualise
+    :type model: ASMModel
+    :return: response
+    :rtype: int
+    """
+    response = -1
+    window = make_window_visualise_model(model)
+    img = model.get_shape(view=False, save_to_file=False)
+    img_bytes = cv.imencode(".png", img)[1].tobytes()
+    (window["-IMAGE-"]).update(data=img_bytes)
+    params = np.zeros([1, model.eigenvalues.shape[0]])
+
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-BACK-":
+            response = 0
+            break
+        elif "-PARAM" in event:
+            index = event.replace('-', '')
+            index = index.replace('PARAM', '')
+            index = int(index)
+            params[0, index] = 0.01 * (values[f"-PARAM{index}-"] - 50)
+            img = model.get_shape(view=False, save_to_file=False, params=params)
+            img_bytes = cv.imencode(".png", img)[1].tobytes()
+            (window["-IMAGE-"]).update(data=img_bytes)
+            window.refresh()
+
+    window.close()
+    return response
