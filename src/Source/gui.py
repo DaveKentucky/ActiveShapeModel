@@ -13,6 +13,23 @@ import numpy as np
 sg.theme("Dark Grey 13")
 
 
+def wait_window(text):
+    """
+    Shows window with information about current process
+
+    :param text: display information about current process
+    :type text: str
+    :return: displayed window
+    :rtype: PySimpleGUI.PySimpleGUI.Window
+    """
+    layout = [
+        [
+            sg.Text(text)
+        ]
+    ]
+    return sg.Window("Please wait", layout, finalize=True, size=(400, 100))
+
+
 def make_window_main_menu():
     """
     Creates window with main menu of the application
@@ -46,12 +63,14 @@ def make_window_main_menu():
     return sg.Window("Main menu", layout, finalize=True, size=(400, 330))
 
 
-def make_window_read_data(training):
+def make_window_read_data(training, models_list=None):
     """
     Creates window with functionality of reading data for model
 
     :param training: defines if window should be used for selection of training or testing data
     :type training: bool
+    :param models_list: list of all created models' names
+    :type models_list: list[str]
     :return: window reading data for model from file
     :rtype: PySimpleGUI.PySimpleGUI.Window
     """
@@ -77,17 +96,28 @@ def make_window_read_data(training):
             sg.Listbox(
                 values=[], enable_events=True, size=(40, 20), key="-FILE LIST-",
             )
-        ],
-        [
-            sg.Text("Model's name:"),
-            sg.In(size=(15, 1), enable_events=False, key="-MODEL NAME-"),
-        ],
-        [
-            sg.Button("Select this directory", focus=True, enable_events=True, key="-SELECT BUTTON-"),
-            sg.Check("Shape from file", tooltip="Use shape model information from predefined file if available",
-                     key="-MARKED POINTS-"),
         ]
     ]
+
+    pre_bottom_row = list()
+    bottom_row = [
+        sg.Button("Select this directory", focus=True, enable_events=True, key="-SELECT BUTTON-")
+    ]
+    if training:
+        pre_bottom_row.append(sg.Text("Model's name:"))
+        pre_bottom_row.append(sg.In(size=(15, 1), enable_events=False, key="-MODEL NAME-"))
+        bottom_row.append(sg.Check("Shape from file",
+                                   tooltip="Use shape model information from predefined file if available",
+                                   key="-MARKED POINTS-"))
+    else:
+        files_column.append([
+            sg.T(' ' * 16),
+            sg.Text("Model")
+        ])
+        pre_bottom_row.append(sg.DropDown(models_list, tooltip="Select model to show", size=(25, 10),
+                                          enable_events=True, key="-MODEL NAME-"))
+    files_column.append(pre_bottom_row)
+    files_column.append(bottom_row)
 
     # layout of the right column with image overview
     image_column = [
@@ -308,6 +338,51 @@ def make_window_visualise_model(model):
     return sg.Window("Visualisation", layout, finalize=True, location=(100, 5))
 
 
+def make_window_visualise_result(result_image):
+    """
+    Creates window layout for visualising fitting result and saving it to file
+
+    :param result_image: image with marked result points
+    :type result_image: np.ndarray
+    :return: window with functionality of showing and saving fitting result
+    :rtype: PySimpleGUI.PySimpleGUI.Window
+    """
+    options_column = [
+        [
+            sg.Button("Back", enable_events=True, key="-BACK-")
+        ],
+        [
+            sg.Text("Folder"),
+            sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"),
+            sg.FolderBrowse()
+        ],
+        [
+            sg.Text("Name"),
+            sg.In(size=(25, 1), enable_events=True, key="-FILENAME-")
+        ],
+        [
+            sg.Button("Save", tooltip="Save result shape to file with given name", enable_events=True, key="-SAVE-")
+        ]
+    ]
+
+    # layout of the right column with image overview
+    image_column = [
+        [sg.Text("Result shape")],
+        [sg.Image(filename="", key="-IMAGE-")],
+    ]
+
+    # layout of whole window
+    layout = [
+        [
+            sg.Column(options_column),
+            sg.VSeparator(),
+            sg.Column(image_column),
+        ]
+    ]
+
+    return sg.Window("Visualisation", layout, finalize=True, location=(100, 5))
+
+
 def cv_mouse_click(event, x, y, flags, creator):
     """
     Resolve mouse input on the image
@@ -478,18 +553,23 @@ def select_training_data_files():
     return response, model, values["-MARKED POINTS-"]
 
 
-def select_search_data_files():
+def select_search_data_files(models_list):
     """
     Creates and operates window where user can select an image to search with the model
 
+    :param models_list: list of tuples with models' names and number of images in the model
+    :type: list[tuple[str, int]]
     :return: response code, image for searching and name of the model that should be used
     :rtype: (int, numpy.ndarray, str)
     """
     response = -1
-    window = make_window_read_data(False)
+    models_names = list()
+    for elem in models_list:
+        models_names.append(elem[0])
+    window = make_window_read_data(False, models_names)
     img = None
     files = None
-    model_name = ''
+    model_name = ""
 
     while True:
         event, values = window.read()
@@ -522,17 +602,18 @@ def select_search_data_files():
                     (window["-IMAGE-"]).update(data=img_bytes)
             except OSError:
                 print("No element selected")
+        elif event == "-MODEL NAME-":
+            model_name = values["-MODEL NAME-"]
         elif event == "-SELECT BUTTON-":
             if files is None:
                 sg.PopupOK("Select correct folder with data!")
             elif len(files) <= 0:
                 sg.PopupOK("Select correct folder with data!")
-            elif len(values["-MODEL NAME-"]) <= 0:
-                sg.PopupOK("Type in model name!")
+            elif model_name == "":
+                sg.PopupOK("Select model!")
             elif img is None:
                 sg.PopupOK("Select an image for test data!")
             else:
-                model_name = values["-MODEL NAME-"]
                 response = 2
                 break
 
@@ -747,6 +828,56 @@ def visualise_model(model):
             img_bytes = cv.imencode(".png", img)[1].tobytes()
             (window["-IMAGE-"]).update(data=img_bytes)
             window.refresh()
+
+    window.close()
+    return response
+
+
+def visualise_result(model, image, result):
+    """
+    Creates and operates window with functionality of showing and saving result image
+
+    :param model: used model
+    :type model: ASMModel
+    :param image: image that search was performed at
+    :type image: np.ndarray
+    :param result: result parameters of search
+    :type result: ASMFitResult
+    :return: response code
+    :rtype: int
+    """
+    response = -1
+    result_image = model.show_result(image, result)
+    window = make_window_visualise_result(result_image)
+    img_bytes = cv.imencode(".png", result_image)[1].tobytes()
+    (window["-IMAGE-"]).update(data=img_bytes)
+    folder = ""
+    filename = ""
+
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+        elif event == "-BACK-":
+            response = 0
+            break
+        elif event == "-FOLDER-":
+            folder = values["-FOLDER-"]
+        elif event == "-FILENAME-":
+            filename = values["-FILENAME-"]
+        elif event == "-SAVE-":
+            if folder == "":
+                sg.PopupOK("You have to select destination folder!")
+            elif filename == "":
+                sg.PopupOK("You have to enter file name!")
+            else:
+                response = 2
+                filename = filename.replace(".", "_img.")
+                cv.imwrite(folder + "/" + filename, result_image)
+                filename = filename.replace("_img.", "_mdl.")
+                model.get_shape(False, True, folder + "/" + filename, result.params)
+                sg.PopupOK("Result successfully saved to file!")
+                break
 
     window.close()
     return response

@@ -2,8 +2,6 @@ import gui
 from asm_model import ASMModel, ASMFitResult
 from database import Database
 
-import cv2 as cv
-
 
 def create_model():
     """
@@ -17,10 +15,12 @@ def create_model():
         return response
     if model is not None:     # successfully created shape model
         my_db = Database()
-        m_id = my_db.insert_model(model)
         help_image = None
         if prepared_shape:
+            wait = gui.wait_window("Reading model parameters...")
             model.set_from_asf()
+            wait.close()
+            m_id = my_db.insert_model(model)
             my_db.insert_shape_info(model.shape_info, m_id)
             for image in model.training_images:
                 my_db.insert_image(image, m_id)
@@ -33,6 +33,7 @@ def create_model():
                             help_image = image  # save first image with points as help image
                         if model.shape_info is None:      # there is no shape info set yet
                             info = creator.create_shape_info()  # create new shape info based on created shape
+                            m_id = my_db.insert_model(model)
                             model.set_shape_info(info)       # set model's shape info
                             s_id = my_db.insert_shape_info(info, m_id)
                         image.set_points_from_list(creator.points)    # set image points array with marked points
@@ -42,24 +43,33 @@ def create_model():
 
 def search_with_model():
     """
-    Fits model to a test image
+    Fits model to a test image and shows the result
 
     :return: response code
     :rtype: int
     """
-    response, image, model_name = gui.select_search_data_files()
+    my_db = Database()
+    models_names = my_db.get_all_models_names()
+    response, image, model_name = gui.select_search_data_files(models_names)
     if response <= 0:
         return response
     if image is not None:
         top_left, size = gui.mark_search_area(image)
         if model_name != '':
-            my_db = Database()
+            # read model from database
+            wait = gui.wait_window("Reading model from database...")
             model = my_db.read_model(model_name)
+            wait.close()
+            # build model structure
+            wait = gui.wait_window("Building ASM model structure...")
             model.build_model()
-            result = model.fit_all(image, top_left, size, verbose=True)
-            model.show_result(image, result)
-            cv.waitKey(0)
-            return response
+            wait.close()
+            # fit model to the image
+            wait = gui.wait_window("Fitting model to the image...")
+            result = model.fit_all(image, top_left, size, verbose=False)
+            wait.close()
+            response = gui.visualise_result(model, image, result)
+            return response if response <= 0 else 0
     else:
         return response
 
@@ -82,8 +92,14 @@ def test_model():
         if True not in measures.values():
             return 3
 
+        # read model from database
+        wait = gui.wait_window("Reading model from database...")
         model = my_db.read_model(model_name)
+        wait.close()
+        # test model performance
+        wait = gui.wait_window("Testing model performance...")
         performance = model.test_model(measures, test_size)
+        wait.close()
         gui.show_test_results(performance)
         return 0
 
@@ -100,9 +116,14 @@ def show_model():
     response, model_name = gui.show_model(models_names)
     if response <= 0:
         return response
-
+    # read model from database
+    wait = gui.wait_window("Reading model from database...")
     model = my_db.read_model(model_name)
+    wait.close()
+    # build model structure
+    wait = gui.wait_window("Building ASM model structure...")
     model.build_model()
+    wait.close()
     return gui.visualise_model(model)
 
 
@@ -122,13 +143,3 @@ if __name__ == '__main__':
             res = test_model()
         elif res == 4:
             res = show_model()
-
-    # search_with_model()
-    # test_model(mdl)
-    # mdl.show_mean_shape(blank=True)
-    # img = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/src/Data/meat_database/F1011flb.bmp")
-    # rt = mdl.fit_all(img, (190, 185), (230, 240), verbose=True)
-    # mdl.show_result(img, rt)
-    # cv.waitKey(0)
-
-    # create_model()

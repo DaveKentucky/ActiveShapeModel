@@ -479,7 +479,7 @@ class ASMModel (ShapeModel):
 
         points = result.to_point_list()
         image = self.shape_info.draw_points_on_image(image, points, False, False)
-        cv.imshow("result image", image)
+        # cv.imshow("result image", image)
 
         return image
 
