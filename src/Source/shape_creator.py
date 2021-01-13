@@ -61,7 +61,7 @@ class ShapeCreator:
         :rtype: numpy.ndarray
         """
         self.info.create_from_shape(self.points, self.contour_start, self.contour_type)
-        image = self.info.draw_points_on_image(self.image, np.array(self.points), draw_directly=False, labels=False)
+        image = self.info.draw_points_on_image(self.image, np.array(self.points), draw_directly=False, labels=True)
 
         return image
 

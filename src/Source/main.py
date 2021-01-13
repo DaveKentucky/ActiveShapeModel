@@ -26,7 +26,9 @@ def create_model():
                 my_db.insert_image(image, m_id)
         else:
             for i, image in enumerate(model.training_images):   # loop through every training image
-                creator = gui.mark_landmark_points(image, help_image)
+                creator, response = gui.mark_landmark_points(image, help_image)
+                if response <= 0:
+                    break
                 if creator is not None:     # received not None creator
                     if len(creator.points) > 0:     # creator's point list is not empty
                         if i == 0:
@@ -38,6 +40,8 @@ def create_model():
                             s_id = my_db.insert_shape_info(info, m_id)
                         image.set_points_from_list(creator.points)    # set image points array with marked points
                         my_db.insert_image(image, m_id)
+                else:
+                    break
         return 0
 
 
@@ -66,7 +70,7 @@ def search_with_model():
             wait.close()
             # fit model to the image
             wait = gui.wait_window("Fitting model to the image...")
-            result = model.fit_all(image, top_left, size, verbose=False)
+            result = model.fit_all(image, top_left, size, verbose=True)
             wait.close()
             response = gui.visualise_result(model, image, result)
             return response if response <= 0 else 0

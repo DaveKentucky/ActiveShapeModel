@@ -52,6 +52,7 @@ class ShapeVector:
         Returns coordinates of point at given index
 
         :param i: index of the point
+        :type i: int
         :return: tuple of point coordinates (X, Y)
         :rtype: (float, float)
         """
@@ -174,8 +175,17 @@ class ShapeVector:
         sv = sim_trans.transform(self, sv)
 
         for i in range(sv.n_points):
-            pts_vec[i, 0] = sv.vector[i * 2]
-            pts_vec[i, 1] = sv.vector[i * 2 + 1]
+            if np.isnan(sv.vector[i * 2]):
+                value = np.nan_to_num(sv.vector[i * 2])
+            else:
+                value = sv.vector[i * 2]
+            pts_vec[i, 0] = value
+
+            if np.isnan(sv.vector[i * 2 + 1]):
+                value = np.nan_to_num(sv.vector[i * 2 + 1])
+            else:
+                value = sv.vector[i * 2 + 1]
+            pts_vec[i, 1] = value
 
         return pts_vec
 
@@ -252,6 +262,12 @@ class SimilarityTransformation:
         return f"a: {self.a}, b: {self.b}, x_t: {self.x_t}, y_t: {self.y_t}"
 
     def get_scale(self):
+        """
+        Calculates the scale of the transformation parameters
+
+        :return: scale fitting the transformation
+        :rtype: float
+        """
         return math.sqrt(self.a * self.a + self.b * self.b)
 
     def multiply(self, trans):
@@ -273,11 +289,13 @@ class SimilarityTransformation:
 
     def transform(self, vec_src, vec_dst):
         """
-        :param vec_src:
+        Transforms given vector with the saved transformation
+
+        :param vec_src: vector to be translated
         :type vec_src: ShapeVector
-        :param vec_dst:
+        :param vec_dst: target vector object for saving transformation result
         :type vec_dst: ShapeVector
-        :return:
+        :return: transformed vector
         :rtype: ShapeVector
         """
         n_points = vec_src.n_points
@@ -316,58 +334,6 @@ class SimilarityTransformation:
         vec_dst.set_from_points_array(dst)
 
         return vec_dst
-
-    def set_transform_by_align(self, v, v_p):
-        """
-        :param v:
-        :type v: ShapeVector
-        :param v_p:
-        :type v_p: ShapeVector
-        :return: None
-        """
-        n_points = v.n_points
-        self.a = np.dot(v_p.vector, v.vector) / np.dot(v.vector, v.vector)
-        self.b = 0
-        for i in range(n_points):
-            x, y = v.get_point(i)
-            x_p, y_p = v_p.get_point(i)
-            self.b += (x * y_p - y * x_p)
-        self.b = self.b / np.dot(v.vector, v.vector)
-        self.x_t = -self.a * v.get_x_mean() + self.b * v.get_y_mean() + v_p.get_x_mean()
-        self.y_t = -self.b * v.get_x_mean() - self.a * v.get_y_mean() + v_p.get_y_mean()
-
-    def warp_image(self, img_src, img_dst):
-        """
-        :param img_src: source image
-        :type img_src: numpy.ndarray
-        :param img_dst: destination image
-        :type img_dst: numpy.ndarray
-        :return: warped image
-        :rtype: numpy.ndarray
-        """
-        warp_mat = np.array([[self.a, -self.b, self.x_t], [self.b, self.a, self.y_t]])
-        img_dst = cv.warpAffine(img_src, warp_mat, [img_src.shape[1], img_src.shape[0]])
-
-        return img_dst
-
-    def warp_image_back(self, img_src, img_dst, dst_size):
-        """
-        :param img_src: source image
-        :type img_src: numpy.ndarray
-        :param img_dst: destination image
-        :type img_dst: numpy.ndarray
-        :param dst_size: if destination image size should be used while warping
-        :type dst_size: bool
-        :return: warped image
-        :rtype: numpy.ndarray
-        """
-        warp_mat = np.array([[self.a, -self.b, self.x_t], [self.b, self.a, self.y_t]])
-        if dst_size:
-            img_dst = cv.warpAffine(img_src, warp_mat, [img_dst.shape[1], img_dst.shape[0]])
-        else:
-            img_dst = cv.warpAffine(img_src, warp_mat, [img_src.shape[1], img_src.shape[0]])
-
-        return img_dst
 
 
 if __name__ == '__main__':

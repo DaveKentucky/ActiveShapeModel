@@ -18,7 +18,7 @@ class ModelImage:
     shape_info: ShapeInfo
 
     # array of landmark points
-    points: np.array
+    points: np.ndarray
 
     # shape vectors
     shape_vector: ShapeVector
@@ -195,7 +195,7 @@ class ModelImage:
             cv.imshow(win_name, img)
             print("Press any key to continue...")
             cv.waitKey()
-            # cv.destroyWindow(win_name)
+            cv.destroyWindow(win_name)
 
         return img
 

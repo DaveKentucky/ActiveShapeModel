@@ -40,6 +40,9 @@ class ASMModel (ShapeModel):
     # feature extractor object for searching points in the image
     feature_extractor: FeatureExtractor
 
+    # array of limits to the model params
+    params_limits: np.ndarray
+
     def __init__(self, points_on_normal=6, search_points_on_normal=5):
         super().__init__()
         self.cov_mat_pyr_inv = list()
@@ -53,6 +56,7 @@ class ASMModel (ShapeModel):
         self.feature_extractor = FeatureExtractor(self.pyramid_level,
                                                   self.points_on_normal,
                                                   self.search_points_on_normal)
+        self.params_limits = None
 
     def __repr__(self):
         return f"ASM " + super().__repr__()
@@ -82,6 +86,10 @@ class ASMModel (ShapeModel):
                                   self.search_points_on_normal,
                                   self.shape_info)
             fe.load_image(image.image)
+            for i, img in enumerate(fe.laplacian_pyramid):
+                cv.imshow("gaussian", fe.gaussian_pyramid[i])
+                cv.imshow("laplacian", img)
+                cv.waitKey(0)
             feature_extractor_list.append(fe)
 
         for i in range(self.pyramid_level):
@@ -119,19 +127,32 @@ class ASMModel (ShapeModel):
 
         self.sigma2_pyr = [0., 0., 0.]
         cur_sigma2 = np.sum(self.pca_full_shape['eigenvalues'])
-        for i in range(len(self.sigma2_pyr)):
-            self.sigma2_pyr[i] = cur_sigma2 / (self.n_landmarks * 2 - 4)
+        # for i in range(len(self.sigma2_pyr)):
+        #     self.sigma2_pyr[i] = cur_sigma2 / (self.n_landmarks * 2 - 4)
 
-        # for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
-        #     if i < 5:
-        #         cur_sigma2 -= eigenvalue[0]
-        # self.sigma2_pyr[2] = cur_sigma2 / (self.n_landmarks * 2 - 4)
-        #
-        # for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
-        #     if 5 <= i < 20:
-        #         cur_sigma2 -= eigenvalue[0]
-        # self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
-        # self.sigma2_pyr[0] = self.sigma2
+        for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
+            if i < 5:
+                cur_sigma2 -= eigenvalue[0]
+        self.sigma2_pyr[2] = cur_sigma2 / (self.n_landmarks * 2 - 4)
+
+        for i, eigenvalue in enumerate(self.pca_full_shape['eigenvalues']):
+            if 5 <= i < 20:
+                cur_sigma2 -= eigenvalue[0]
+        self.sigma2_pyr[1] = cur_sigma2 / (self.n_landmarks * 2 - 4)
+        self.sigma2_pyr[0] = self.sigma2
+
+        # params_limits = np.zeros([self.eigenvalues.shape[0], 2])
+        # for img in self.training_images:
+        #     params = np.zeros([1, self.eigenvalues.shape[0]])
+        #     st = self.mean_shape.get_shape_transform_fitting_size(img.image.shape)
+        #     fit_result = ASMFitResult(params, st, self)
+        #     fit_result = self.find_params_for_shape(img.shape_vector, self.mean_shape, fit_result, 1)
+        #     for i, param in enumerate(fit_result.params[0]):
+        #         if param < params_limits[i, 0]:
+        #             params_limits[i, 0] = param
+        #         if param > params_limits[i, 1]:
+        #             params_limits[i, 1] = param
+        # self.params_limits = params_limits * 3e10
 
     def get_shape(self, view, save_to_file, filename="shape.jpg", params=None):
         """
@@ -357,6 +378,13 @@ class ASMModel (ShapeModel):
 
                 # project found shape to PCA model and back to get parameters
                 fit_result = self.find_params_for_shape(cur_search.shape_vector, shape_old, fit_result, level)
+
+                # # apply limits to found params
+                # for i, param in enumerate(fit_result.params[0]):
+                #     if param < self.params_limits[i, 0]:
+                #         fit_result.params[0, i] = self.params_limits[i, 0]
+                #     if param > self.params_limits[i, 1]:
+                #         fit_result.params[0, i] = self.params_limits[i, 1]
 
                 cur_search.shape_vector.set_from_vector(cv.PCABackProject(
                     fit_result.params,

@@ -69,22 +69,16 @@ class FeatureExtractor:
             self.gaussian_pyramid.append(layer)
             # cv.imshow(str(i), layer)
 
-        # convert image to grayscale
-        if len(img.shape) == 3:
-            layer = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        else:
-            layer = img.copy()
-
         # build layers of laplacian pyramid
         for gaussian in self.gaussian_pyramid:
             # create higher layer of gaussian pyramid layer
             gaussian_extended = cv.pyrDown(gaussian)
+            layer = cv.GaussianBlur(layer, (5, 5), cv.BORDER_DEFAULT)
             # expand the upper layer of gaussian pyramid
-            gaussian_extended = cv.pyrUp(gaussian_extended)
-            # unify both layers' sizes
-            gaussian_extended = cv.resize(gaussian_extended, (gaussian.shape[1], gaussian.shape[0]))
+            gaussian_extended = cv.pyrUp(gaussian_extended, dstsize=(gaussian.shape[1], gaussian.shape[0]))
             # subtract the layers to get laplacian layer
             laplacian = cv.subtract(gaussian, gaussian_extended)
+            laplacian += 100
             self.laplacian_pyramid.append(laplacian)
             # cv.imshow(str(i), laplacian)
 
@@ -125,6 +119,20 @@ class FeatureExtractor:
 
     @staticmethod
     def get_center(loop_range, prev_x, prev_y, direction):
+        """
+        Finds the center coordinates
+
+        :param loop_range: max range of search iterations
+        :type loop_range: int
+        :param prev_x: previous x coordinate of the center
+        :type prev_x: int
+        :param prev_y: previous y coordinate of the center
+        :type prev_y: int
+        :param direction: direction line parameters
+        :type direction: (int, int)
+        :return: center coordinates and proper number of iterations
+        :rtype: (int, int, int)
+        """
 
         nx = 0
         ny = 0
@@ -296,11 +304,16 @@ class FeatureExtractor:
 
 
 if __name__ == '__main__':
-    pass
-    # image = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/Source/data/Face_images/face4.jpg")
+    image = cv.imread("E:/Szkolne/Praca_inzynierska/ActiveShapeModel/src/Data/face_database/01-1m.jpg")
     # cv.imshow("Original image", image)
-    # fe = FeatureExtractor()
-    # fe.load_image(image)
+    fe = FeatureExtractor(3, 5, 5)
+    fe.load_image(image)
+    for i in range(len(fe.gaussian_pyramid)):
+        cv.imshow("gaussian", fe.gaussian_pyramid[i])
+        cv.imshow("laplacian", fe.laplacian_pyramid[i])
+        cv.waitKey(0)
+        cv.destroyWindow("gaussian")
+        cv.destroyWindow("laplacian")
     # cv.waitKey(0)
     # cv.destroyAllWindows()
 

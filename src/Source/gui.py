@@ -10,7 +10,7 @@ import sys
 import statistics
 import numpy as np
 
-sg.theme("Dark Grey 13")
+sg.theme("Light Grey 3")
 
 
 def wait_window(text):
@@ -24,10 +24,11 @@ def wait_window(text):
     """
     layout = [
         [
+            sg.T(' ' * (36 - len(text))),
             sg.Text(text)
         ]
     ]
-    return sg.Window("Please wait", layout, finalize=True, size=(400, 100))
+    return sg.Window("Please wait", layout, finalize=True, size=(300, 50))
 
 
 def make_window_main_menu():
@@ -106,7 +107,7 @@ def make_window_read_data(training, models_list=None):
     if training:
         pre_bottom_row.append(sg.Text("Model's name:"))
         pre_bottom_row.append(sg.In(size=(15, 1), enable_events=False, key="-MODEL NAME-"))
-        bottom_row.append(sg.Check("Shape from file",
+        bottom_row.append(sg.Checkbox("Shape from file",
                                    tooltip="Use shape model information from predefined file if available",
                                    key="-MARKED POINTS-"))
     else:
@@ -444,10 +445,11 @@ def mark_landmark_points(m_img, h_img):
     :type m_img: ModelImage
     :param h_img: ModelImage with already marked points for a pattern
     :type h_img: ModelImage
-    :return: creator object with data about marked points and possibility of creating ShapeInfo object
-    :rtype: ShapeCreator
+    :return: creator object with data about marked points and possibility of creating ShapeInfo object and response code
+    :rtype: (ShapeCreator, int)
     """
     n_points = -1
+    response = -1
     if m_img.shape_info is not None:
         n_points = len(m_img.shape_info.point_info)
 
@@ -480,11 +482,12 @@ def mark_landmark_points(m_img, h_img):
             else:
                 answer = sg.popup_yes_no("Are you sure you want to submit this shape?")
                 if answer == 'Yes':
+                    response = 1
                     break
 
     window.close()
     cv.destroyWindow(creator.window_name)
-    return creator
+    return creator, response
 
 
 def select_training_data_files():
@@ -523,6 +526,10 @@ def select_training_data_files():
                 for f in file_list
                 if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith((".jpg", ".png", ".bmp"))
             ]
+            if any(".asf" in f for f in file_list):
+                window["-MARKED POINTS-"].update(disabled=False)
+            else:
+                window["-MARKED POINTS-"].update(disabled=True)
             window["-FILE LIST-"].update(files)
         elif event == "-FILE LIST-":  # file was chosen from the listbox
             try:
