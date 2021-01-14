@@ -10,6 +10,7 @@ def create_model():
     :return: response code
     :rtype: int
     """
+    m_id = -1
     response, model, prepared_shape = gui.select_training_data_files()
     if response <= 0:
         return response
@@ -28,6 +29,8 @@ def create_model():
             for i, image in enumerate(model.training_images):   # loop through every training image
                 creator, response = gui.mark_landmark_points(image, help_image)
                 if response <= 0:
+                    if i > 0 and m_id >= 0:
+                        my_db.delete_model(m_id)
                     break
                 if creator is not None:     # received not None creator
                     if len(creator.points) > 0:     # creator's point list is not empty
@@ -54,11 +57,13 @@ def search_with_model():
     """
     my_db = Database()
     models_names = my_db.get_all_models_names()
-    response, image, model_name = gui.select_search_data_files(models_names)
+    response, image_name, image, model_name = gui.select_search_data_files(models_names)
     if response <= 0:
         return response
     if image is not None:
-        top_left, size = gui.mark_search_area(image)
+        top_left, size, response = gui.mark_search_area(image)
+        if response <= 0:
+            return 0
         if model_name != '':
             # read model from database
             wait = gui.wait_window("Reading model from database...")
@@ -66,6 +71,10 @@ def search_with_model():
             wait.close()
             # build model structure
             wait = gui.wait_window("Building ASM model structure...")
+            for img in model.training_images:
+                if img.name == image_name:
+                    top_left, size = img.get_shape_frame(10)
+                    break
             model.build_model()
             wait.close()
             # fit model to the image

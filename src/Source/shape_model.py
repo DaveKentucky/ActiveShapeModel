@@ -122,8 +122,7 @@ class ShapeModel:
                 pca_data[i, j] = self.training_images[i].shape_vector.vector[j]
 
         self.pca_shape, self.eigenvectors, self.eigenvalues = cv.PCACompute2(pca_data, mean=None,
-                                                                             maxComponents=int(self.n_landmarks / 4))
-
+                                                                             maxComponents=12)
         eigenvalues_sum = np.sum(self.eigenvalues)
         s_cur = 0
         for eigenvalue in self.eigenvalues:

@@ -140,7 +140,7 @@ class ModelImage:
             self.points[i, 1] = int(coord_y * self.image.shape[0])
             index += 1
 
-            # read other point's data if shape info should be read
+            # read point's full data if shape info should be read
             if read_info:
                 id = int(line[0])
                 type = int(line[1])
@@ -160,7 +160,7 @@ class ModelImage:
                     contours_count += 1
                     start_id = pi.contour
                     start_id_list.append(i)
-                    if pi.type == 0:
+                    if pi.type == 0 or pi.type == 1:
                         type_list.append(1)
                     elif pi.type == 4:
                         type_list.append(0)

@@ -101,12 +101,11 @@ def make_window_read_data(training, models_list=None):
     ]
 
     pre_bottom_row = list()
-    bottom_row = [
-        sg.Button("Select this directory", focus=True, enable_events=True, key="-SELECT BUTTON-")
-    ]
+    bottom_row = list()
     if training:
         pre_bottom_row.append(sg.Text("Model's name:"))
         pre_bottom_row.append(sg.In(size=(15, 1), enable_events=False, key="-MODEL NAME-"))
+        bottom_row.append(sg.Button("Select this directory", focus=True, enable_events=True, key="-SELECT BUTTON-"))
         bottom_row.append(sg.Checkbox("Shape from file",
                                    tooltip="Use shape model information from predefined file if available",
                                    key="-MARKED POINTS-"))
@@ -117,6 +116,7 @@ def make_window_read_data(training, models_list=None):
         ])
         pre_bottom_row.append(sg.DropDown(models_list, tooltip="Select model to show", size=(25, 10),
                                           enable_events=True, key="-MODEL NAME-"))
+        bottom_row.append(sg.Button("Select this image", focus=True, enable_events=True, key="-SELECT BUTTON-"))
     files_column.append(pre_bottom_row)
     files_column.append(bottom_row)
 
@@ -487,6 +487,7 @@ def mark_landmark_points(m_img, h_img):
 
     window.close()
     cv.destroyWindow(creator.window_name)
+    cv.destroyWindow("Help image")
     return creator, response
 
 
@@ -566,8 +567,8 @@ def select_search_data_files(models_list):
 
     :param models_list: list of tuples with models' names and number of images in the model
     :type: list[tuple[str, int]]
-    :return: response code, image for searching and name of the model that should be used
-    :rtype: (int, numpy.ndarray, str)
+    :return: response code, name of the image file, image for searching and name of the model that should be used
+    :rtype: (int, str, numpy.ndarray, str)
     """
     response = -1
     models_names = list()
@@ -577,6 +578,7 @@ def select_search_data_files(models_list):
     img = None
     files = None
     model_name = ""
+    image_name = ""
 
     while True:
         event, values = window.read()
@@ -604,6 +606,7 @@ def select_search_data_files(models_list):
         elif event == "-FILE LIST-":  # file was chosen from the listbox
             try:
                 if len(values["-FILE LIST-"]) > 0:
+                    image_name = values["-FILE LIST-"][0]
                     img = cv.imread(values["-FOLDER-"] + "/" + values["-FILE LIST-"][0])
                     img_bytes = cv.imencode(".png", img)[1].tobytes()
                     (window["-IMAGE-"]).update(data=img_bytes)
@@ -625,7 +628,7 @@ def select_search_data_files(models_list):
                 break
 
     window.close()
-    return response, img, model_name
+    return response, image_name, img, model_name
 
 
 def mark_search_area(image):
@@ -634,9 +637,10 @@ def mark_search_area(image):
 
     :param image: image where the model should be applied
     :type image: numpy.ndarray
-    :return: top left corner of the search area and its size
-    :rtype: ((int, int), (int, int))
+    :return: top left corner of the search area, its size and response code
+    :rtype: ((int, int), (int, int), int)
     """
+    response = -1
     # Set recursion limit
     sys.setrecursionlimit(10 ** 9)
 
@@ -662,10 +666,16 @@ def mark_search_area(image):
             cv.destroyWindow("Image")
         # if return_flag is True, break from the loop
         elif select_window.return_flag:
+            select_window.return_flag = False
             break
 
     left, top, right, bottom = sa.get_area_rectangle(select_window)
-    return (left, top), (right - left, bottom - top)
+    response = 2
+
+    cv.destroyWindow("Image")
+    if right < width / 4 or bottom < height / 4:
+        return (0, 0), (width, height), response
+    return (left, top), (right - left, bottom - top), response
 
 
 def update_test_training_sizes(window, slider_read, n_images):
@@ -879,6 +889,9 @@ def visualise_result(model, image, result):
                 sg.PopupOK("You have to enter file name!")
             else:
                 response = 2
+                if not (".jpg" in filename or ".png" in filename):
+                    filename = filename.split(".")[0]
+                    filename += ".jpg"
                 filename = filename.replace(".", "_img.")
                 cv.imwrite(folder + "/" + filename, result_image)
                 filename = filename.replace("_img.", "_mdl.")

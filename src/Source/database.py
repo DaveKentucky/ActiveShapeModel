@@ -2,9 +2,8 @@ from asm_model import ASMModel
 from shape_info import ShapeInfo, PointInfo
 from model_image import ModelImage
 
-import mysql.connector
-from mysql.connector import errorcode
 import numpy as np
+import sqlite3
 
 
 class Database:
@@ -13,95 +12,33 @@ class Database:
     name: str
 
     # connection object with database
-    db: mysql.connector.MySQLConnection
+    db: sqlite3.Connection
 
     # cursor for executing queries on established connection
-    cursor: mysql.connector.connection.CursorBase
+    cursor: sqlite3.Cursor
 
-    def __init__(self, username="root", password="password1", db_name="asm_database"):
+    def __init__(self, db_name="asm_database"):
         """
         Initializes connection on localhost with existing database or creates a new one
 
-        :param username: MySQL user name
-        :type username: str
-        :param password: MySQL user password
-        :type password: str
         :param db_name: name of the database
         :type db_name: str
         """
         self.name = db_name
-        self.connect_to_database(username, password, db_name)
-        self.cursor.execute("show tables")
+        self.db = sqlite3.connect(db_name + ".db")
+        self.cursor = self.db.cursor()
+        query = "select * from sqlite_master where type='table';"
+        self.cursor.execute(query)
         results = self.cursor.fetchall()
-        print(f"\nUsing database {db_name} with tables:")
-        for r in results:
-            print(r[0])
-
-    def close(self):
-        """
-        Commits all unsaved changes and closes the connection with database
-
-        :return: None
-        """
-        self.cursor.close()
-        self.db.commit()
-        self.db.close()
-        print(f"Connection with database {self.name} closed")
-
-    def connect_to_database(self, username, password, db_name):
-        """
-        Connects to the MySQL database with given parameters
-
-        :param username: name of the MySQL user
-        :type username: str
-        :param password: password of the MySQL user
-        :type password: str
-        :param db_name: name of the database to connect
-        :type db_name: str
-        """
-        host = "localhost"
-        try:
-            print(f"Connecting to database {db_name}...")
-            connection = mysql.connector.connect(host=host, user=username, password=password, database=db_name)
-            if connection:
-                cursor = connection.cursor()
-                self.db = connection
-                self.cursor = cursor
-                print(f"Connected to database {db_name}")
-        except mysql.connector.Error as er:
-
-            if er.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-                print("Invalid username and/or password")
-            elif er.errno == errorcode.ER_BAD_DB_ERROR:
-                print("Database does not exist")
-
-                connection = mysql.connector.connect(host=host, user=username, password=password)
-                if connection:
-                    cursor = connection.cursor()
-                    self.db = connection
-                    self.cursor = cursor
-                    self.create_database(db_name)
-            else:
-                print(er)
-
-    def create_database(self, db_name):
-        """
-        Creates database with given name
-
-        :param db_name: name of the database to connect
-        :type db_name: str
-        :return: None
-        """
-        try:
-            print(f"\nCreating new database {db_name}...")
-            self.cursor.execute("create database " + db_name)
-            self.cursor.execute("use " + db_name)
-            print("OK")
-            # create tables if database was created
+        # check if the tables already exist
+        if len(results) == 0:
             self.create_default_tables()
-        except mysql.connector.Error as er:
-            print("Failed creating database: {}".format(er))
-            exit(1)
+            self.cursor.execute(query)
+            results = self.cursor.fetchall()
+        else:
+            print(f"\nUsing database {db_name} with tables:")
+        for r in results:
+            print(r[1])
 
     def create_default_tables(self):
         """
@@ -115,62 +52,67 @@ class Database:
         tables = {
             "models":
                 "create table models ("
-                "model_id int primary key auto_increment not null,"
-                "model_name varchar(40),"
-                "directory varchar(100),"
-                "pts_on_normal int,"
-                "search_pts_on_normal int"
+                "model_id integer primary key not null,"
+                "model_name text,"
+                "directory text,"
+                "pts_on_normal integer,"
+                "search_pts_on_normal integer"
                 ")",
             "shape_info":
                 "create table shape_info ("
-                "shape_info_id int primary key auto_increment not null,"
-                "model_id int,"
+                "shape_info_id integer primary key not null,"
+                "model_id integer,"
                 "foreign key (model_id) references models(model_id) on delete cascade)",
             "point_info":
                 "create table point_info ("
-                "point_info_id int primary key auto_increment not null,"
-                "shape_info_id int,"
-                "point_index int not null,"
-                "contour_id int,"
-                "contour_type int,"
-                "previous int,"
-                "next int,"
+                "point_info_id integer primary key not null,"
+                "shape_info_id integer,"
+                "point_index integer not null,"
+                "contour_id integer,"
+                "contour_type integer,"
+                "previous integer,"
+                "next integer,"
                 "foreign key (shape_info_id) references shape_info(shape_info_id) on delete cascade)",
             "images":
                 "create table images ("
-                "image_id int primary key auto_increment not null, model_id int,"
-                "image_name varchar(40),"
-                "points_count int,"
+                "image_id integer primary key not null,"
+                "model_id integer,"
+                "image_name text,"
+                "points_count integer,"
                 "foreign key (model_id) references models(model_id) on delete cascade)",
             "points":
                 "create table points ("
-                "point_id int primary key auto_increment not null,"
-                "image_id int,"
-                "point_index int,"
-                "x int,"
-                "y int,"
+                "point_id integer primary key not null,"
+                "image_id integer,"
+                "point_index integer,"
+                "x integer,"
+                "y integer,"
                 "foreign key (image_id) references images (image_id) on delete set null)",
             "contours":
                 "create table contours ("
-                "contour_id int primary key auto_increment not null,"
-                "shape_info_id int,"
-                "is_closed int,"
-                "start_point_index int,"
+                "contour_id integer primary key not null,"
+                "shape_info_id integer,"
+                "is_closed integer,"
+                "start_point_index integer,"
                 "foreign key (shape_info_id) references shape_info(shape_info_id) on delete cascade)"
         }
 
         for table_name in tables:
-            try:
-                print(f"Creating table {table_name}...")
-                query = tables[table_name]
-                self.cursor.execute(query)
-            except mysql.connector.Error as er:
-                if er.errno == errorcode.ER_TABLE_EXISTS_ERROR:
-                    print(f"Table {table_name} already exists")
-                else:
-                    print(er.msg)
-            else:
-                print("OK")
+            print(f"Creating table {table_name}...")
+            query = tables[table_name]
+            self.cursor.execute(query)
+            print("OK")
+
+    def close(self):
+        """
+        Commits all unsaved changes and closes the connection with database
+
+        :return: None
+        """
+        self.cursor.close()
+        self.db.commit()
+        self.db.close()
+        print(f"Connection with database {self.name} closed")
 
     def insert_model(self, asm_model):
         """
@@ -181,7 +123,7 @@ class Database:
         :rtype: int
         """
         query = "insert into models (model_name, directory, pts_on_normal, search_pts_on_normal)" \
-                "values (%s, %s, %s, %s)"
+                "values (?, ?, ?, ?)"
         data = (asm_model.name_tag, asm_model.directory, asm_model.points_on_normal, asm_model.search_points_on_normal)
         self.cursor.execute(query, data)    # insert model object
         self.db.commit()
@@ -198,7 +140,7 @@ class Database:
         :return: ID of the inserted ShapeInfo object in database
         :rtype: int
         """
-        query = "insert into shape_info (model_id) values (%s)"
+        query = "insert into shape_info (model_id) values (?)"
         self.cursor.execute(query, (model_id, ))    # insert ShapeInfo object
 
         shape_info_id = self.cursor.lastrowid
@@ -228,7 +170,7 @@ class Database:
         :return: ID o the inserted contour in database
         :rtype: int
         """
-        query = "insert into contours (shape_info_id, is_closed, start_point_index) values (%s, %s, %s)"
+        query = "insert into contours (shape_info_id, is_closed, start_point_index) values (?, ?, ?)"
         data = (shape_info_id, contour_is_closed, contour_start_id)
         self.cursor.execute(query, data)    # insert contour
 
@@ -256,7 +198,7 @@ class Database:
         :rtype: int
         """
         query = "insert into point_info (shape_info_id, point_index, contour_id, contour_type, previous, next)" \
-                "values (%s, %s, %s, %s, %s, %s)"
+                "values (?, ?, ?, ?, ?, ?)"
         data = (shape_info_id, point_id, contour_id, contour_type, connect_from, connect_to)
         self.cursor.execute(query, data)    # insert PointInfo object
 
@@ -275,7 +217,7 @@ class Database:
         :rtype: int
         """
 
-        query = "insert into images (model_id, image_name, points_count) values (%s, %s, %s)"
+        query = "insert into images (model_id, image_name, points_count) values (?, ?, ?)"
         data = (model_id, image.name, image.n_points)
         self.cursor.execute(query, data)    # insert ModelImage object
 
@@ -304,7 +246,7 @@ class Database:
         :rtype: int
         """
 
-        query = "insert into points (image_id, x, y, point_index) values (%s, %s, %s, %s)"
+        query = "insert into points (image_id, x, y, point_index) values (?, ?, ?, ?)"
         data = (image_id, int(x), int(y), point_index)
         self.cursor.execute(query, data)    # insert point
 
@@ -365,7 +307,7 @@ class Database:
             for r in result:    # store all results in a dictionary
                 pi = PointInfo(r[1], r[2], r[3], r[4])
                 pi_dict[r[0]] = pi
-                pi_list = []
+            pi_list = []
             for key in sorted(pi_dict.keys()):  # sort the dictionary by point info index and save points info in a list
                 pi_list.append(pi_dict[key])
             shape_info.point_info = pi_list
@@ -439,16 +381,28 @@ class Database:
             query = f"select model_id from models where model_name = '{name}'"
             self.cursor.execute(query)  # read id of every model
             result = self.cursor.fetchone()
-            query = f"select count(*) from images where model_id = {result[0]}"
+            query = f"select count(image_id) from images where model_id = {result[0]}"
             self.cursor.execute(query)  # read number of points of every model
             result = self.cursor.fetchone()
             models_list[i] = (models_list[i], result[0])
-            self.cursor.reset()
 
         return models_list
+
+    def delete_model(self, model_id):
+        """
+        Deletes model with given name from database
+
+        :param model_id: ID of the model in database
+        :type model_id: int
+        :return: None
+        """
+        query = f"delete from models where model_id = {model_id}"
+        self.cursor.execute(query)
+        return None
 
 
 if __name__ == '__main__':
 
     my_db = Database()
-    my_db.read_model("hand")
+    my_db.cursor.close()
+    # my_db.read_model("hand")
