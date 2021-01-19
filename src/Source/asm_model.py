@@ -165,7 +165,8 @@ class ASMModel (ShapeModel):
         :return: image with the mean shape
         :rtype: np.ndarray
         """
-        canvas = np.ones_like(self.training_images[0].image)
+        canvas = np.zeros_like(self.training_images[0].image)
+        canvas.fill(255)
         if params is None:
             img = super().get_mean_shape(view=False, blank=True)
         else:

@@ -17,6 +17,7 @@ def create_model():
     if model is not None:     # successfully created shape model
         my_db = Database()
         help_image = None
+        help_creator = None
         if prepared_shape:
             wait = gui.wait_window("Reading model parameters...")
             model.set_from_asf()
@@ -27,7 +28,7 @@ def create_model():
                 my_db.insert_image(image, m_id)
         else:
             for i, image in enumerate(model.training_images):   # loop through every training image
-                creator, response = gui.mark_landmark_points(image, help_image)
+                creator, response = gui.mark_landmark_points(image, help_image, help_creator)
                 if response <= 0:
                     if i > 0 and m_id >= 0:
                         my_db.delete_model(m_id)
@@ -36,6 +37,7 @@ def create_model():
                     if len(creator.points) > 0:     # creator's point list is not empty
                         if i == 0:
                             help_image = image  # save first image with points as help image
+                            help_creator = creator
                         if model.shape_info is None:      # there is no shape info set yet
                             info = creator.create_shape_info()  # create new shape info based on created shape
                             m_id = my_db.insert_model(model)
@@ -71,15 +73,16 @@ def search_with_model():
             wait.close()
             # build model structure
             wait = gui.wait_window("Building ASM model structure...")
-            for img in model.training_images:
-                if img.name == image_name:
-                    top_left, size = img.get_shape_frame(10)
-                    break
+            if top_left == (0, 0) and size == (image.shape[1], image.shape[0]):
+                for img in model.training_images:
+                    if img.name == image_name:
+                        top_left, size = img.get_shape_frame(10)
+                        break
             model.build_model()
             wait.close()
             # fit model to the image
             wait = gui.wait_window("Fitting model to the image...")
-            result = model.fit_all(image, top_left, size, verbose=True)
+            result = model.fit_all(image, top_left, size, verbose=False)
             wait.close()
             response = gui.visualise_result(model, image, result)
             return response if response <= 0 else 0

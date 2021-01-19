@@ -90,9 +90,11 @@ class ShapeInfo:
         else:
             img = image.copy()
 
+        line_thickness = 2
+        point_size = 3
         # draw marked points on image
         for i, point in enumerate(points):
-            cv.circle(img, (point[0], point[1]), 3, (0, 0, 220), -1)
+            cv.circle(img, (point[0], point[1]), point_size, (0, 0, 220), -1)
             if labels:
                 cv.putText(img, str(i + 1), (point[0] + 2, point[1] - 2), cv.QT_FONT_BLACK, 0.7, (0, 0, 220))
 
@@ -118,14 +120,14 @@ class ShapeInfo:
                     else:  # point index is smaller than first in this contour
                         draw_line = False
                 if draw_line:  # draw line for every point except first points in every shape
-                    cv.line(img, tuple(points[j - 1]), tuple(point), (200, 100, 50), 1)
+                    cv.line(img, tuple(points[j - 1]), tuple(point), (200, 100, 50), line_thickness)
 
             if i + 1 < len(self.contour_start_index):  # it is NOT the last contour
                 if self.contour_is_closed[i] == 1:  # it is a closed contour
                     cv.line(img, tuple(points[first]), tuple(points[self.contour_start_index[i + 1] - 1]),
-                            (200, 100, 50), 1)
+                            (200, 100, 50), line_thickness)
             else:
                 if self.contour_is_closed[i] == 1:  # it is a closed contour
-                    cv.line(img, tuple(points[first]), tuple(points[-1]), (200, 100, 50), 1)
+                    cv.line(img, tuple(points[first]), tuple(points[-1]), (200, 100, 50), line_thickness)
 
         return img

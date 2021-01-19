@@ -218,7 +218,8 @@ class ShapeModel:
         :rtype np.ndarray
         """
         if blank:
-            img = np.ones_like(self.training_images[0].image)
+            img = np.zeros_like(self.training_images[0].image)
+            img.fill(255)
         else:
             if image is not None:
                 img = image.copy()

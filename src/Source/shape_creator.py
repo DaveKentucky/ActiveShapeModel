@@ -38,9 +38,9 @@ class ShapeCreator:
         self.image = img.copy()
         self.window_name = window_name
         self.points = list()
-        self.current_is_closed = False
         self.contour_start = list()
         self.contour_type = list()
+        self.current_is_closed = False
         self.end_index = -1
         self.info = ShapeInfo()
 
@@ -52,6 +52,29 @@ class ShapeCreator:
 
         return f"ShapeCreator: image: {self.window_name},\n" \
                f"{len(self.points)} points and {len(self.contour_start)} contours marked,\n" + string
+
+    def set(self, creator):
+        """
+        Sets the points from other ShapeCreator object
+
+        :param creator: creator, which data should be copied
+        :type creator: ShapeCreator
+        :return: None
+        """
+        self.points = creator.points.copy()
+        self.contour_start = creator.contour_start.copy()
+        self.contour_type = creator.contour_type.copy()
+        self.current_is_closed = creator.current_is_closed
+        self.end_index = creator.end_index
+        self.info = creator.info
+
+        # rescale the points if images' shapes vary
+        if self.image.shape != creator.image.shape:
+            w_ratio = self.image.shape[1] / creator.image.shape[1]
+            h_ratio = self.image.shape[0] / creator.image.shape[0]
+            for point in self.points:
+                point[0] = int(point[0] * w_ratio)
+                point[1] = int(point[1] * h_ratio)
 
     def get_display_image(self):
         """
@@ -96,6 +119,36 @@ class ShapeCreator:
             else:   # return to creating previous contour
                 self.end_index = self.points[-1] - 1
         self.points.pop()
+
+    def get_point(self, x, y):
+        """
+        Finds point with given coordinates
+
+        :param x: X coordinate of the searched point
+        :type x: int
+        :param y: Y coordinate of the searched point
+        :type y: int
+        :return: index of the searched point or -1 if not found
+        :rtype: int
+        """
+        for i, point in enumerate(self.points):
+            if x - 3 <= point[0] <= x + 3 and y - 3 <= point[1] <= y + 3:
+                return i
+        return -1
+
+    def move_point(self, i, x, y):
+        """
+        Moves a point to given coordinates
+
+        :param i: index of the moved point in the list
+        :type i: int
+        :param x: target X coordinate of the point
+        :type x: int
+        :param y: target Y coordinate of the point
+        :type y: int
+        :return: None
+        """
+        self.points[i] = np.array([x, y])
 
     def start_contour(self):
         """

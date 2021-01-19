@@ -172,7 +172,7 @@ class ModelImage:
         else:
             return None
 
-    def show(self, show, win_name="image"):
+    def show(self, show, win_name="image", labels=False):
         """
         Returns copy of the image with marked model shapes on it
 
@@ -180,6 +180,8 @@ class ModelImage:
         :type show: bool
         :param win_name: name of the window for displaying an image
         :type win_name: str
+        :param labels: if numbers of points should be drawn on the image
+        :type labels: bool
         :return: image copy with model shapes
         :rtype: numpy.ndarray
         """
@@ -189,7 +191,7 @@ class ModelImage:
             img = self.image.copy()
 
         if self.shape_info is not None:
-            img = self.shape_info.draw_points_on_image(img, self.points, draw_directly=False, labels=False)
+            img = self.shape_info.draw_points_on_image(img, self.points, draw_directly=False, labels=labels)
 
         if show:
             cv.imshow(win_name, img)

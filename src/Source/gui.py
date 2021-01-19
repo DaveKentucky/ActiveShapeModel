@@ -11,6 +11,7 @@ import statistics
 import numpy as np
 
 sg.theme("Light Grey 3")
+g_index = -1
 
 
 def wait_window(text):
@@ -399,10 +400,24 @@ def cv_mouse_click(event, x, y, flags, creator):
     :type creator: ShapeCreator
     :return: None
     """
+    global g_index
 
     if event == cv.EVENT_LBUTTONDOWN:
+        g_index = creator.get_point(x, y)
+        if g_index >= 0:
+            creator.move_point(g_index, x, y)
 
-        creator.add_point(x, y)
+    if event == cv.EVENT_LBUTTONUP:
+        if g_index >= 0:
+            creator.move_point(g_index, x, y)
+            g_index = -1
+        else:
+            creator.add_point(x, y)
+
+    if event == cv.EVENT_MOUSEMOVE:
+        if g_index >= 0:
+            creator.move_point(g_index, x, y)
+            cv.imshow(creator.window_name, creator.get_display_image())
 
     cv.imshow(creator.window_name, creator.get_display_image())
 
@@ -437,7 +452,7 @@ def main_menu():
     return response
 
 
-def mark_landmark_points(m_img, h_img):
+def mark_landmark_points(m_img, h_img, h_creator=None):
     """
     Creates and operates window where user can draw a shape on image
 
@@ -445,6 +460,8 @@ def mark_landmark_points(m_img, h_img):
     :type m_img: ModelImage
     :param h_img: ModelImage with already marked points for a pattern
     :type h_img: ModelImage
+    :param h_creator: ShapeCreator from help image
+    :type h_creator: ShapeCreator
     :return: creator object with data about marked points and possibility of creating ShapeInfo object and response code
     :rtype: (ShapeCreator, int)
     """
@@ -457,13 +474,15 @@ def mark_landmark_points(m_img, h_img):
     if m_img.is_loaded:
         win_name = m_img.name
         creator = ShapeCreator(m_img.image, win_name)
+        if h_creator is not None:
+            creator.set(h_creator)
         cv.imshow(win_name, creator.get_display_image())
         cv.setMouseCallback(win_name, cv_mouse_click, creator)
     else:
         print(f"Failed to read model image: {m_img.name}\nMake sure the image is loaded")
         return None
     if h_img is not None:
-        cv.imshow("Help image", h_img.show(False))
+        cv.imshow("Help image", h_img.show(False, labels=True))
 
     while True and cv.getWindowProperty(win_name, cv.WND_PROP_VISIBLE) >= 1:
         cv.imshow(creator.window_name, creator.get_display_image())
@@ -673,7 +692,7 @@ def mark_search_area(image):
     response = 2
 
     cv.destroyWindow("Image")
-    if right < width / 4 or bottom < height / 4:
+    if (right - left) < width / 4 or (bottom - top) < height / 4:
         return (0, 0), (width, height), response
     return (left, top), (right - left, bottom - top), response
 
